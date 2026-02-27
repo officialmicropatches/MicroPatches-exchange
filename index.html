@@ -765,16 +765,17 @@
 
   if (form) {
     form.addEventListener("submit", async (e) => {
-      e.preventDefault();
+  e.preventDefault();
 
-      const data = Object.fromEntries(new FormData(form).entries());
-      console.log("Submitting:", data);
+  const data = Object.fromEntries(new FormData(form).entries());
 
-      try {
-        const result = await push(ref(db, "exchangeQueue"), {
-          ...data,
-          timestamp: Date.now()
-        });
+  console.log("Data about to push:", data);
+
+  await push(ref(db, "exchangeQueue"), {
+    ...data,
+    timestamp: Date.now()
+  });
+});
 
         console.log("Firebase push key:", result.key);
         alert("Submission received.");
