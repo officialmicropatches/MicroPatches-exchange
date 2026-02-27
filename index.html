@@ -687,7 +687,7 @@
 ```
 <div id="agencyNotice" class="agency-notice"></div>
 
-<form id="exchangeForm" onsubmit="handleSubmit(event)" action="https://formspree.io/f/mqednono" method="POST">
+<form id="exchangeForm">
   <div class="form-row">
     <div class="form-group">
       <label>First Name</label>
@@ -1008,7 +1008,7 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
-  const form = document.querySelector("form");
+  const form = document.getElementById("exchangeForm");
   if (!form) {
     console.error("No form found on page");
   } else {
