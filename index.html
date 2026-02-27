@@ -741,24 +741,8 @@
   </script>
 
   <!-- FIREBASE SUBMISSION (WORKING) -->
-  <script type="module">
-   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-  import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDkNCYz7DXKF2Ku8B4FfN1gXdVV3P3B2YE",
-    authDomain: "micropatches-exchange.firebaseapp.com",
-    databaseURL: "https://micropatches-exchange-default-rtdb.firebaseio.com",
-    projectId: "micropatches-exchange",
-    storageBucket: "micropatches-exchange.firebasestorage.app",
-    messagingSenderId: "953111257361",
-    appId: "1:953111257361:web:e18c2403e222cf97b6cb0"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  <script type="module">
+  <!-- FIREBASE SUBMISSION (WORKING) -->
+<script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
   import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js";
 
@@ -780,30 +764,30 @@
   console.log("Firebase initialized.");
   console.log("Form found:", !!form);
 
- if (form) {
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-    try {
-      const data = Object.fromEntries(new FormData(form).entries());
-      console.log("Data about to push:", data);
+      try {
+        const data = Object.fromEntries(new FormData(form).entries());
+        console.log("Data about to push:", data);
 
-      const result = await push(ref(db, "exchangeQueue"), {
-        ...data,
-        timestamp: Date.now()
-      });
+        const result = await push(ref(db, "exchangeQueue"), {
+          ...data,
+          timestamp: Date.now()
+        });
 
-      console.log("Firebase push key:", result.key);
-      alert("Submission received.");
-      form.reset();
-    } catch (err) {
-      console.error("Firebase error:", err);
-      alert("Firebase error. Check console.");
-    }
-  });
-} else {
-  console.error("No form found on page");
-}
+        console.log("Firebase push key:", result.key);
+        alert("Submission received.");
+        form.reset();
+      } catch (err) {
+        console.error("Firebase error:", err);
+        alert("Firebase error. Check console.");
+      }
+    });
+  } else {
+    console.error("No form found on page");
+  }
 </script>
 </body>
 </html>
