@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MicroPatches — Patch Exchange Program</title>
+
+<style>
+  :root {
+    --navy: #1a2235;
+    --steel: #2e3f5c;
+    --mid: #4a5a72;
+    --gold: #c9a84c;
+    --gold-light: #e8c97a;
+    --offwhite: #f2ede6;
+    --warm-gray: #b0a898;
+    --text: #2a2a2a;
+    --card-bg: #ffffff;
+    --section-bg: #f7f3ed;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--offwhite);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--navy);
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(45deg, transparent, transparent 40px, rgba(201,168,76,0.04) 40px, rgba(201,168,76,0.04) 41px);
+    pointer-events: none;
+  }
+
+  .header-inner {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 48px 24px 40px;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .badge {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--navy);
+    font-family: 'Impact', 'Arial Narrow', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    padding: 5px 14px;
+    border-radius: 2px;
+    margin-bottom: 18px;
+  }
+
+  h1 {
+    font-family: 'Impact', 'Arial Narrow', sans-serif;
+    font-size: clamp(48px, 10vw, 78px);
+    color: #fff;
+    line-height: 0.95;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+
+  h1 span { color: var(--gold); }
+
+  .tagline {
+    font-size: 15px;
+    color: var(--warm-gray);
+    font-weight: 300;
+    letter-spacing: 0.5px;
+    margin-top: 12px;
+  }
+
+  .divider {
+    width: 48px;
+    height: 2px;
+    background: var(--gold);
+    margin: 20px auto;
+    opacity: 0.7;
+  }
+
+  .section { max-width: 680px; margin: 0 auto; padding: 48px 24px; }
+
+  .section-label {
+    font-family: 'Impact', 'Arial Narrow', sans-serif;
+    font-size: 13px;
+    letter-spacing: 4px;
+    color: var(--gold);
+    margin-bottom: 10px;
+  }
+
+  .section h2 {
+    font-family: 'Impact', 'Arial Narrow', sans-serif;
+    font-size: 36px;
+    color: var(--navy);
+    letter-spacing: 1px;
+    margin-bottom: 28px;
+  }
+
+  .steps { display: grid; gap: 16px; }
+
+  .step {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    background: var(--card-bg);
+    border: 1px solid #e2ddd5;
+    border-radius: 6px;
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+
+  .step-num {
+    font-family: 'Impact', 'Arial Narrow', sans-serif;
+    font-size: 32px;
+    color: var(--gold);
+    line-height: 1;
+    min-width: 32px;
+  }
+
+  .step-content h3 { font-weight: 600; font-size: 15px; color: var(--navy); margin-bottom: 4px; }
+  .step-content p { font-size: 14px; color: #5a5a5a; line-height: 1.6; }
+
+  .patches-section {
+    background: var(--section-bg);
+    border-top: 1px solid #e0d9cf;
+    border-bottom: 1px solid #e0d9cf;
+  }
+
+  .patches-inner { max-width: 680px; margin: 0 auto; padding: 48px 24px; }
+
+  .patch-search {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #d4cec6;
+    border-radius: 6px;
+    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    background: #fff;
+    color: var(--text);
+    margin-bottom: 24px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .patch-search:focus { border-color: var(--gold); }
+
+  .patch-category { margin-bottom: 32px; }
+
+  .patch-category h3 {
+    font-family: 'Impact', 'Arial Narrow', sans-serif;
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: var(--mid);
+    border-bottom: 1px solid #d4cec6;
+    padding-bottom: 8px;
+    margin-bottom: 14px;
+  }
+
+  .patch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+  }
+
+  .patch-card {
+    background: var(--card-bg);
+    border: 1px solid #e2ddd5;
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.4;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .patch-card:hover { border-color: var(--gold); box-shadow: 0 2px 8px rgba(201,168,76,0.15); }
+  .patch-card.hidden { display: none; }
+
+  .patch-state {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--warm-gray);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .patch-name { font-weight: 600; color: var(--navy); display: block; }
+  .patch-variant { font-size: 11px; color: var(--gold); margin-top: 2px; display: block; }
+
+  /* ===== LUCKY DAY BANNER ===== */
+  #luckyDay {
+    display: none;
+    background: linear-gradient(135deg, #1a2235 0%, #2e3f5c 100%);
+    border: 2px solid var(--gold);
+    border-radius: 10px;
+    padding: 32px 24px;
+    text-align: center;
+    margin-top: 8px;
+    animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+
+  @keyframes popIn {
+    from { opacity:0; transform:scale(0.92); }
+    to { opacity:1; transform:scale(1); }
+  }
+
+  #luckyDay .lucky-emoji { font-size: 44px; margin-bottom: 10px; }
+
+  #luckyDay h3 {
+    font-family: 'Impact', 'Arial Narrow', sans-serif;
+    font-size: 34px;
+    color: var(--gold-light);
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  #luckyDay p {
+    font-size: 14px;
+    color: var(--warm-gray);
+    line-height: 1.7;
+    max-width: 460px;
+    margin: 0 auto 18px;
+  }
+
+  .queue-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+
+  .queue-badge.open {
+    background: rgba(45,122,79,0.25);
+    border: 1px solid #2d7a4f;
+    color: #5ebd8a;
+  }
+
+  .queue-badge.pending {
+    background: rgba(180,83,9,0.25);
+    border: 1px solid #b45309;
+    color: #f59e0b;
+  }
+
+  .queue-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .queue-badge.open .queue-dot { background: #5ebd8a; animation: blink 1.5s infinite; }
+  .queue-badge.pending .queue-dot { background: #f59e0b; }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+  .waitlist-box {
+    background: rgba(180,83,9,0.15);
+    border: 1px solid rgba(180,83,9,0.5);
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: #f59e0b;
+    text-align: left;
+    margin: 0 auto 20px;
+    max-width: 460px;
+    line-height: 1.6;
+  }
+
+  .waitlist-box strong { color: #fbbf24; }
+
+  .claim-btn {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--navy);
+    font-family: 'Impact', 'Arial Narrow', sans-serif;
+    font-size: 20px;
+    letter-spacing: 2px;
+    padding: 14px 36px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+  }
+
+  .claim-btn:hover { background: var(--gold-light); transform: translateY(-2px); }
+  .claim-btn:active { transform: translateY(0); }
+
+  /* REWARD SECTION */
+  .rewards { max-width: 680px; margin: 0 auto; padding: 48px 24px; }
+
+  .reward-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .reward-card {
+    background: var(--navy);
+    color: #fff;
+    border-radius: 8px;
+    padding: 28px 20px;
+    text-align: center;
+  }
+
+  .reward-icon { font-size: 36px; margin-bottom: 12px; }
+
+  .reward-card h3 {
+    font-family: 'Impact', 'Arial Narrow', sans-serif;
+    font-size: 22px;
+    letter-spacing: 1px;
+    color: var(--gold-light);
+    margin-bottom: 6px;
+  }
+
+  .reward-card p { font-size: 13px; color: var(--warm-gray); line-height: 1.5; }
+
+  /* CONTACT FORM */
+  .contact-section { background: var(--steel); }
+
+  .contact-inner { max-width: 680px; margin: 0 auto; padding: 48px 24px; }
+  .contact-inner .section-label { color: var(--gold-light); }
+
+  .agency-notice {
+    display: none;
+    border-radius: 6px;
+    padding: 13px 16px;
+    font-size: 13px;
+    margin-bottom: 20px;
+    line-height: 1.6;
+    border: 1px solid;
+  }
+
+  .agency-notice.open { background: rgba(45,122,79,0.15); border-color: #2d7a4f; color: #5ebd8a; }
+  .agency-notice.pending { background: rgba(180,83,9,0.15); border-color: #b45309; color: #f59e0b; }
+  .agency-notice.locked { background: rgba(100,0,0,0.15); border-color: #7f1d1d; color: #fca5a5; }
+
+  .form-group { margin-bottom: 16px; }
+
+  label {
+    display: block;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--warm-gray);
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 5px;
+    color: #fff;
+    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.3); }
+  input:focus, select:focus, textarea:focus { border-color: var(--gold); }
+  select option { background: var(--steel); color: #fff; }
+  textarea { resize: vertical; min-height: 90px; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  .submit-btn {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    background: var(--gold);
+    color: var(--navy);
+    border: none;
+    border-radius: 5px;
+    font-family: 'Impact', 'Arial Narrow', sans-serif;
+    font-size: 20px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background 0.2s, transform 0.1s;
+  }
+
+  .submit-btn:hover { background: var(--gold-light); transform: translateY(-1px); }
+  .submit-btn:active { transform: translateY(0); }
+
+  .form-note {
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 14px;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .success-msg {
+    display: none;
+    border-radius: 8px;
+    padding: 28px 24px;
+    text-align: center;
+    font-size: 14px;
+    margin-top: 16px;
+    line-height: 1.8;
+    border: 1px solid;
+  }
+
+  .success-msg.first { background: rgba(45,122,79,0.2); border-color: #2d7a4f; color: #5ebd8a; }
+  .success-msg.waitlist { background: rgba(180,83,9,0.15); border-color: #b45309; color: #f59e0b; }
+
+  .success-msg h4 {
+    font-family: 'Impact', 'Arial Narrow', sans-serif;
+    font-size: 26px;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  footer {
+    background: var(--navy);
+    text-align: center;
+    padding: 28px 24px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.5px;
+    cursor: default;
+    user-select: none;
+  }
+
+  footer a { color: var(--gold); text-decoration: none; }
+
+  /* ADMIN PANEL */
+  #adminPanel {
+    display: none;
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    background: var(--navy);
+    border: 1px solid var(--gold);
+    border-radius: 8px;
+    padding: 18px;
+    font-size: 13px;
+    color: #fff;
+    z-index: 9999;
+    min-width: 280px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  }
+
+  #adminPanel h4 {
+    font-family: 'Impact', 'Arial Narrow', sans-serif;
+    font-size: 20px;
+    color: var(--gold);
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+  }
+
+  #adminPanel .close-btn {
+    position: absolute;
+    top: 10px; right: 12px;
+    background: none;
+    border: none;
+    color: var(--warm-gray);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+  }
+
+  .admin-select {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    padding: 8px 10px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    font-size: 13px;
+    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  .admin-select option { background: var(--navy); }
+
+  .admin-btn {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    padding: 9px 10px;
+    border-radius: 4px;
+    border: none;
+    font-size: 13px;
+    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .admin-btn:hover { opacity: 0.85; }
+  .admin-btn.green { background: var(--gold); color: var(--navy); }
+  .admin-btn.red { background: #7f1d1d; color: #fca5a5; }
+  .admin-btn.gray { background: rgba(255,255,255,0.1); color: var(--warm-gray); }
+
+  #adminStatus { font-size: 12px; color: var(--warm-gray); margin-top: 10px; text-align: center; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  .fade-up { opacity:0; animation: fadeUp 0.5s ease forwards; }
+  .fade-up:nth-child(1){animation-delay:0.1s}
+  .fade-up:nth-child(2){animation-delay:0.2s}
+  .fade-up:nth-child(3){animation-delay:0.3s}
+  .fade-up:nth-child(4){animation-delay:0.4s}
+
+  @media(max-width:480px){
+    .form-row{grid-template-columns:1fr}
+    .reward-options{grid-template-columns:1fr}
+    .patch-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+  }
+</style>
+
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="badge">MICROPATCHES</div>
+    <h1>PATCH<br><span>EXCHANGE</span></h1>
+    <div class="divider"></div>
+    <p class="tagline">Trade your agency patch for a custom keychain or magnet — 1 for 1.</p>
+  </div>
+</header>
+
+<section class="section">
+  <div class="section-label">THE PROGRAM</div>
+  <h2>How It Works</h2>
+  <div class="steps">
+    <div class="step fade-up">
+      <div class="step-num">01</div>
+      <div class="step-content">
+        <h3>Search Our Lineup</h3>
+        <p>Type your agency in the search below. If we <strong>don't already have your patch</strong>, you're eligible for the exchange.</p>
+      </div>
+    </div>
+    <div class="step fade-up">
+      <div class="step-num">02</div>
+      <div class="step-content">
+        <h3>Claim Your Spot</h3>
+        <p>Fill out the form to reserve your place. <strong>One primary spot per agency</strong> — if it's taken, you'll be added to the waitlist automatically.</p>
+      </div>
+    </div>
+    <div class="step fade-up">
+      <div class="step-num">03</div>
+      <div class="step-content">
+        <h3>Send Your Patch</h3>
+        <p>After we confirm eligibility via email, mail us your agency patch. <strong>You only cover shipping to us</strong> — we'll cover shipping your keychain or magnet back to you. We finalize the exchange once the patch is in hand.</p>
+      </div>
+    </div>
+    <div class="step fade-up">
+      <div class="step-num">04</div>
+      <div class="step-content">
+        <h3>Get Your Reward</h3>
+        <p>Choose a <strong>custom keychain</strong> or <strong>magnet</strong> in your agency's patch design — handmade at MicroPatches.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="background: var(--section-bg); border-top: 1px solid #e0d9cf;">
+  <div class="rewards">
+    <div class="section-label">YOUR CHOICE</div>
+    <h2 style="font-family:'Impact', 'Arial Narrow',sans-serif;font-size:36px;color:var(--navy);letter-spacing:1px;margin-bottom:4px;">Pick Your Reward</h2>
+    <p style="font-size:14px;color:#5a5a5a;margin-bottom:0;">Each exchange earns you one of the following — made in your agency's patch design.</p>
+    <div class="reward-options">
+      <div class="reward-card">
+        <div class="reward-icon">🔑</div>
+        <h3>Keychain</h3>
+        <p>3D printed, durable, full-color patch keychain you can carry every day.</p>
+      </div>
+      <div class="reward-card">
+        <div class="reward-icon">🧲</div>
+        <h3>Magnet</h3>
+        <p>High-quality patch magnet — perfect for your locker, vehicle, or fridge.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="patches-section">
+  <div class="patches-inner">
+    <div class="section-label">CURRENT INVENTORY</div>
+    <h2 style="font-family:'Impact', 'Arial Narrow',sans-serif;font-size:36px;color:var(--navy);letter-spacing:1px;margin-bottom:6px;">Patches We Have</h2>
+    <p style="font-size:14px;color:#5a5a5a;margin-bottom:24px;">If your agency is <strong>not listed below</strong>, you're eligible to participate.</p>
+
+```
+<input type="text" class="patch-search" placeholder="Search your agency or state..." id="searchInput" oninput="filterPatches()">
+
+<div class="patch-category" id="cat-le">
+  <h3>Law Enforcement</h3>
+  <div class="patch-grid">
+    <div class="patch-card"><span class="patch-state">Arizona</span><span class="patch-name">Chandler PD</span></div>
+    <div class="patch-card"><span class="patch-state">Arizona</span><span class="patch-name">Chandler PD</span><span class="patch-variant">Retired</span></div>
+    <div class="patch-card"><span class="patch-state">Arizona</span><span class="patch-name">Chandler PD</span><span class="patch-variant">Pink Patch Program</span></div>
+    <div class="patch-card"><span class="patch-state">Arizona</span><span class="patch-name">Tempe PD</span></div>
+    <div class="patch-card"><span class="patch-state">Arizona</span><span class="patch-name">Tempe PD</span><span class="patch-variant">Subdued</span></div>
+    <div class="patch-card"><span class="patch-state">Arizona</span><span class="patch-name">Gilbert PD</span></div>
+    <div class="patch-card"><span class="patch-state">Arizona</span><span class="patch-name">Phoenix PD</span></div>
+    <div class="patch-card"><span class="patch-state">Arizona</span><span class="patch-name">Prescott PD</span></div>
+    <div class="patch-card"><span class="patch-state">Arizona</span><span class="patch-name">AZ DPS</span></div>
+    <div class="patch-card"><span class="patch-state">Arizona</span><span class="patch-name">Tucson PD</span></div>
+    <div class="patch-card"><span class="patch-state">Arizona</span><span class="patch-name">Scottsdale PD</span><span class="patch-variant">Retired</span></div>
+    <div class="patch-card"><span class="patch-state">Arizona</span><span class="patch-name">SCORE Jail</span></div>
+    <div class="patch-card"><span class="patch-state">Arizona</span><span class="patch-name">Gila River Indian Police</span></div>
+    <div class="patch-card"><span class="patch-state">Washington</span><span class="patch-name">Auburn PD</span></div>
+    <div class="patch-card"><span class="patch-state">Washington</span><span class="patch-name">Auburn PD</span><span class="patch-variant">Retired</span></div>
+    <div class="patch-card"><span class="patch-state">Washington</span><span class="patch-name">Pierce County Sheriff</span></div>
+    <div class="patch-card"><span class="patch-state">Washington</span><span class="patch-name">Tacoma PD</span></div>
+    <div class="patch-card"><span class="patch-state">Hawaii</span><span class="patch-name">Honolulu PD</span></div>
+    <div class="patch-card"><span class="patch-state">Hawaii</span><span class="patch-name">Maui PD</span></div>
+    <div class="patch-card"><span class="patch-state">California</span><span class="patch-name">San Jose PD</span></div>
+    <div class="patch-card"><span class="patch-state">Nevada</span><span class="patch-name">Las Vegas Metro PD</span></div>
+    <div class="patch-card"><span class="patch-state">New Mexico</span><span class="patch-name">Valencia County Sheriff</span></div>
+    <div class="patch-card"><span class="patch-state">New Mexico</span><span class="patch-name">Albuquerque PD</span></div>
+    <div class="patch-card"><span class="patch-state">New York</span><span class="patch-name">NYPD</span></div>
+    <div class="patch-card"><span class="patch-state">Illinois</span><span class="patch-name">Chicago PD</span></div>
+    <div class="patch-card"><span class="patch-state">New Hampshire</span><span class="patch-name">Portsmouth PD</span></div>
+    <div class="patch-card"><span class="patch-state">Maine</span><span class="patch-name">Maine State Police</span></div>
+    <div class="patch-card"><span class="patch-state">Federal</span><span class="patch-name">FBI SWAT</span></div>
+  </div>
+</div>
+
+<div class="patch-category" id="cat-ems">
+  <h3>EMS / Fire</h3>
+  <div class="patch-grid">
+    <div class="patch-card"><span class="patch-state">National</span><span class="patch-name">AMR (EMT)</span></div>
+  </div>
+</div>
+
+<div class="patch-category" id="cat-mil">
+  <h3>Military</h3>
+  <div class="patch-grid">
+    <div class="patch-card"><span class="patch-state">U.S. Army</span><span class="patch-name">82nd Airborne</span></div>
+  </div>
+</div>
+
+<!-- LUCKY DAY BANNER -->
+<div id="luckyDay">
+  <div class="lucky-emoji">🎉</div>
+  <h3>It's Your Lucky Day!</h3>
+  <p id="luckyMsg">We don't have your patch yet — which means you're eligible for the exchange. Claim your spot now and get a custom keychain or magnet of your agency's patch.</p>
+  <div id="queueBadge" class="queue-badge open">
+    <span class="queue-dot"></span>
+    <span id="queueBadgeText">Spot Open — Be the First!</span>
+  </div>
+  <div id="waitlistBox" class="waitlist-box" style="display:none;">
+    ⚠️ <strong>Heads up:</strong> Someone has already submitted for this agency but we haven't received their patch yet. You can still fill out the form and be placed on the <strong>waitlist</strong>. If the primary submission falls through, we'll contact you next — no patch required from you until then.
+  </div>
+  <br>
+  <button class="claim-btn" onclick="scrollToForm()">CLAIM YOUR SPOT →</button>
+</div>
+```
+
+  </div>
+</section>
+
+<section class="contact-section" id="formSection">
+  <div class="contact-inner">
+    <div class="section-label">GET STARTED</div>
+    <h2 style="font-family:'Impact', 'Arial Narrow',sans-serif;font-size:36px;color:#fff;letter-spacing:1px;margin-bottom:18px;">Submit Your Exchange</h2>
+
+```
+<div id="agencyNotice" class="agency-notice"></div>
+
+<form id="exchangeForm" onsubmit="handleSubmit(event)" action="https://formspree.io/f/mqednono" method="POST">
+  <div class="form-row">
+    <div class="form-group">
+      <label>First Name</label>
+      <input type="text" id="firstName" placeholder="John" required>
+    </div>
+    <div class="form-group">
+      <label>Last Name</label>
+      <input type="text" id="lastName" placeholder="Smith" required>
+    </div>
+  </div>
+  <div class="form-group">
+    <label>Email Address</label>
+    <input type="email" id="emailInput" placeholder="you@example.com" required>
+  </div>
+  <div class="form-group">
+    <label>Agency / Department Name</label>
+    <input type="text" id="agencyInput" placeholder="e.g. Mesa Police Department" required oninput="checkAgency()">
+  </div>
+  <div class="form-group">
+    <label>State</label>
+    <input type="text" id="stateInput" placeholder="e.g. Arizona" required>
+  </div>
+  <div class="form-group">
+    <label>I Want In Exchange</label>
+    <select id="rewardSelect" required>
+      <option value="" disabled selected>Select your reward...</option>
+      <option>Keychain — Agency Patch Design</option>
+      <option>Magnet — Agency Patch Design</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label>Anything else we should know?</label>
+    <textarea id="notesInput" placeholder="Notes, questions, patch details, etc."></textarea>
+  </div>
+  <button type="submit" class="submit-btn" id="submitBtn">SUBMIT EXCHANGE REQUEST</button>
+  <p class="form-note">After submitting, we'll email you within 24–48 hours with confirmation and our mailing address. <strong>Do NOT send your patch until you've heard from us.</strong><br><br>📦 <strong>Shipping breakdown:</strong> You cover postage to send your patch to us — we cover shipping your keychain or magnet back to you. Totally free on our end.</p>
+</form>
+
+<div class="success-msg" id="successMsg"></div>
+```
+
+  </div>
+</section>
+
+<footer id="footerEl">
+  <p>© 2025 MicroPatches · All Rights Reserved</p>
+  <p style="margin-top:6px;"><a href="https://instagram.com/micropatches" target="_blank">@MicroPatches</a> on Instagram</p>
+</footer>
+
+<!-- ADMIN PANEL -->
+
+<div id="adminPanel">
+  <button class="close-btn" onclick="document.getElementById('adminPanel').style.display='none'">✕</button>
+  <h4>🛡 Queue Manager</h4>
+  <p style="font-size:12px;color:var(--warm-gray);margin-bottom:4px;">Manage exchange submissions by agency.</p>
+  <select class="admin-select" id="adminSelect">
+    <option value="">— Select an agency —</option>
+  </select>
+  <button class="admin-btn green" onclick="markReceived()">✅ Mark Patch Received</button>
+  <button class="admin-btn red" onclick="clearQueue()">🗑 Clear Agency Queue</button>
+  <button class="admin-btn gray" onclick="loadAdmin()">↻ Refresh List</button>
+  <p id="adminStatus"></p>
+</div>
+
+<script>
+  // ── Storage helpers ──────────────────────────────────────────
+  function makeKey(agency) {
+    return 'queue:' + agency.trim().toLowerCase().replace(/[^a-z0-9]+/g,'_');
+  }
+
+  async function getQ(agency) {
+    try {
+      const r = await window.storage.get(makeKey(agency), true);
+      return r ? JSON.parse(r.value) : null;
+    } catch { return null; }
+  }
+
+  async function setQ(agency, data) {
+    try { await window.storage.set(makeKey(agency), JSON.stringify(data), true); }
+    catch(e) { console.warn('Storage:', e); }
+  }
+
+  async function delQ(key) {
+    try { await window.storage.delete(key, true); } catch {}
+  }
+
+  async function listQ() {
+    try {
+      const r = await window.storage.list('queue:', true);
+      return r ? r.keys : [];
+    } catch { return []; }
+  }
+
+  // ── Patch search + lucky day banner ─────────────────────────
+  async function filterPatches() {
+    const q = document.getElementById('searchInput').value.trim().toLowerCase();
+    const cards = document.querySelectorAll('.patch-card');
+    let anyVisible = false;
+
+    cards.forEach(card => {
+      const match = q && card.textContent.toLowerCase().includes(q);
+      if (!q || match) { card.classList.remove('hidden'); if(q) anyVisible = true; }
+      else card.classList.add('hidden');
+    });
+
+    document.querySelectorAll('.patch-category').forEach(cat => {
+      if (!q) { cat.style.display = ''; return; }
+      cat.style.display = cat.querySelectorAll('.patch-card:not(.hidden)').length > 0 ? '' : 'none';
+    });
+
+    const lucky = document.getElementById('luckyDay');
+    if (!q || anyVisible || q.length < 2) { lucky.style.display = 'none'; return; }
+
+    // No patch found in list — show lucky day
+    lucky.style.display = 'block';
+    const data = await getQ(q);
+    const badge = document.getElementById('queueBadge');
+    const badgeText = document.getElementById('queueBadgeText');
+    const wBox = document.getElementById('waitlistBox');
+    const msg = document.getElementById('luckyMsg');
+
+    if (!data || data.status === 'open') {
+      badge.className = 'queue-badge open';
+      badge.innerHTML = '<span class="queue-dot"></span><span>Spot Open — Be the First!</span>';
+      wBox.style.display = 'none';
+      msg.textContent = "We don't have your patch yet — which means you're eligible for the exchange. Claim your spot now and get a custom keychain or magnet of your agency's patch.";
+    } else if (data.status === 'pending') {
+      badge.className = 'queue-badge pending';
+      badge.innerHTML = '<span class="queue-dot"></span><span>Primary Spot Reserved — Waitlist Open</span>';
+      wBox.style.display = 'block';
+      msg.textContent = "We don't have this patch yet! Someone has already claimed the first spot, but you can still join the waitlist. If they don't follow through, you're next in line.";
+    } else if (data.status === 'received') {
+      // Patch received, no longer eligible
+      lucky.style.display = 'none';
+    }
+  }
+
+  // ── Agency status check in form ──────────────────────────────
+  let checkTimer = null;
+
+  function checkAgency() {
+    clearTimeout(checkTimer);
+    checkTimer = setTimeout(async () => {
+      const agency = document.getElementById('agencyInput').value.trim();
+      const notice = document.getElementById('agencyNotice');
+      const btn = document.getElementById('submitBtn');
+
+      if (agency.length < 3) { notice.style.display = 'none'; btn.textContent = 'SUBMIT EXCHANGE REQUEST'; return; }
+
+      const data = await getQ(agency);
+
+      if (!data || data.status === 'open') {
+        notice.className = 'agency-notice open';
+        notice.style.display = 'block';
+        notice.innerHTML = '✅ <strong>Spot available!</strong> You\'ll be first in line for this agency.';
+        btn.textContent = 'CLAIM PRIMARY SPOT';
+      } else if (data.status === 'pending') {
+        notice.className = 'agency-notice pending';
+        notice.style.display = 'block';
+        notice.innerHTML = '⚠️ <strong>Primary spot is taken</strong> for this agency — someone submitted but we haven\'t received their patch yet. Submitting will add you to the <strong>waitlist</strong>. If they don\'t come through, we\'ll contact you next.';
+        btn.textContent = 'JOIN THE WAITLIST';
+      } else if (data.status === 'received') {
+        notice.className = 'agency-notice locked';
+        notice.style.display = 'block';
+        notice.innerHTML = '🔒 <strong>We already have this patch</strong> — this agency is not currently eligible for the exchange.';
+        btn.textContent = 'SUBMIT ANYWAY';
+      } else {
+        notice.style.display = 'none';
+        btn.textContent = 'SUBMIT EXCHANGE REQUEST';
+      }
+    }, 400);
+  }
+
+  // ── Form submission ──────────────────────────────────────────
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const agency = document.getElementById('agencyInput').value.trim();
+    const qdata = await getQ(agency);
+    const isFirst = !qdata || qdata.status === 'open';
+    const isLocked = qdata && qdata.status === 'received';
+
+    // Build Formspree submission
+    const formData = {
+      firstName: document.getElementById('firstName').value,
+      lastName: document.getElementById('lastName').value,
+      email: document.getElementById('emailInput').value,
+      agency: agency,
+      state: document.getElementById('stateInput').value,
+      reward: document.getElementById('rewardSelect').value,
+      notes: document.getElementById('notesInput').value,
+      position: isLocked ? 'Ineligible - Patch Already Received' : isFirst ? 'PRIMARY SPOT' : 'WAITLIST',
+      _subject: `MicroPatches Exchange Request — ${agency} [${isFirst ? 'PRIMARY' : 'WAITLIST'}]`
+    };
+
+    // Send to Formspree
+    try {
+      await fetch('https://formspree.io/f/mqednono', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+    } catch(err) {
+      console.warn('Formspree error:', err);
+    }
+
+    // Update queue
+    if (isFirst) {
+      await setQ(agency, { status: 'pending', count: 1, timestamp: Date.now() });
+    } else if (!isLocked) {
+      await setQ(agency, { ...qdata, count: (qdata.count || 1) + 1 });
+    }
+
+    document.getElementById('exchangeForm').style.display = 'none';
+    const sm = document.getElementById('successMsg');
+
+    if (isLocked) {
+      sm.className = 'success-msg waitlist';
+      sm.innerHTML = `<h4>📋 Request Received</h4>We already have this patch in our collection. We'll review your request and be in touch if something can be worked out.`;
+    } else if (isFirst) {
+      sm.className = 'success-msg first';
+      sm.innerHTML = `<h4>🎉 You Got the Primary Spot!</h4>You're first in line for <strong>${agency}</strong>.<br><br>We'll email you within 24–48 hours with confirmation and our mailing address.<br><strong>Do NOT send your patch until you receive our confirmation.</strong>`;
+    } else {
+      sm.className = 'success-msg waitlist';
+      sm.innerHTML = `<h4>📋 You're on the Waitlist!</h4>Someone already has the primary spot for <strong>${agency}</strong>, but you've been added to the waitlist.<br><br>If their patch doesn't arrive, <strong>you're next</strong> — we'll reach out automatically. No action needed on your end right now.`;
+    }
+
+    sm.style.display = 'block';
+    sm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // ── Scroll to form + pre-fill ────────────────────────────────
+  function scrollToForm() {
+    const search = document.getElementById('searchInput').value.trim();
+    if (search.length >= 2) {
+      document.getElementById('agencyInput').value = search;
+      checkAgency();
+    }
+    document.getElementById('formSection').scrollIntoView({ behavior: 'smooth' });
+    setTimeout(() => document.getElementById('agencyInput').focus(), 650);
+  }
+
+  // ── Admin: secret 5-tap on footer ───────────────────────────
+  let taps = 0, tapT = null;
+
+  document.getElementById('footerEl').addEventListener('click', () => {
+    taps++;
+    clearTimeout(tapT);
+    tapT = setTimeout(() => taps = 0, 2500);
+    if (taps >= 5) {
+      taps = 0;
+      const pw = prompt('Admin access:');
+      if (pw === 'micropatches2025') {
+        document.getElementById('adminPanel').style.display = 'block';
+        loadAdmin();
+      }
+    }
+  });
+
+  async function loadAdmin() {
+    const keys = await listQ();
+    const sel = document.getElementById('adminSelect');
+    sel.innerHTML = '<option value="">— Select an agency —</option>';
+
+    for (const key of keys) {
+      try {
+        const r = await window.storage.get(key, true);
+        if (!r) continue;
+        const d = JSON.parse(r.value);
+        const label = key.replace('queue:','').replace(/_/g,' ');
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = `${label}  [${d.status}${d.count > 1 ? ' · '+d.count+' submitters' : ''}]`;
+        sel.appendChild(opt);
+      } catch {}
+    }
+
+    document.getElementById('adminStatus').textContent = keys.length + ' agenc' + (keys.length===1?'y':'ies') + ' in queue';
+  }
+
+  async function markReceived() {
+    const key = document.getElementById('adminSelect').value;
+    if (!key) { alert('Select an agency first.'); return; }
+    try {
+      const r = await window.storage.get(key, true);
+      if (!r) return;
+      const d = JSON.parse(r.value);
+      await window.storage.set(key, JSON.stringify({...d, status:'received'}), true);
+      document.getElementById('adminStatus').textContent = '✅ Marked as received!';
+      await loadAdmin();
+    } catch(e) { document.getElementById('adminStatus').textContent = 'Error: ' + e.message; }
+  }
+
+  async function clearQueue() {
+    const key = document.getElementById('adminSelect').value;
+    if (!key) { alert('Select an agency first.'); return; }
+    if (!confirm('Clear this agency from the queue entirely?')) return;
+    try {
+      await delQ(key);
+      document.getElementById('adminStatus').textContent = '🗑 Queue cleared.';
+      await loadAdmin();
+    } catch(e) { document.getElementById('adminStatus').textContent = 'Error: ' + e.message; }
+  }
+</script>
+
+</body>
+</html>
