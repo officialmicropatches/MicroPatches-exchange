@@ -991,6 +991,41 @@
     } catch(e) { document.getElementById('adminStatus').textContent = 'Error: ' + e.message; }
   }
 </script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+  import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js";
 
+  const firebaseConfig = {
+    apiKey: AIzaSyDkNCYz7DXKF2Ku8B4FfN1gXdVV3P3B2YE,
+    authDomain: "micropatches-exchange.firebaseapp.com",
+    databaseURL: "https://micropatches-exchange-default-rtdb.firebaseio.com",
+    projectId: "micropatches-exchange",
+    storageBucket: "micropatches-exchange.firebasestorage.app",
+    messagingSenderId: "953111257361",
+    appId: "1:953111257361:web:e18c2403e222cf97b6cb0"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const form = document.querySelector("form");
+  if (!form) {
+    console.error("No form found on page");
+  } else {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const data = Object.fromEntries(new FormData(form).entries());
+
+      await push(ref(db, "exchangeQueue"), {
+        ...data,
+        timestamp: Date.now()
+      });
+
+      alert("Submission received");
+      form.reset();
+    });
+  }
+</script>
 </body>
 </html>
