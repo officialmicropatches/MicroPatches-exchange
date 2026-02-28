@@ -12,11 +12,11 @@
       --mid: #4a5a72;
       --gold: #c9a84c;
       --gold-light: #e8c97a;
-      --offwhite: #f2ede6;
-      --warm-gray: #b0a898;
-      --text: #2a2a2a;
-      --card-bg: #ffffff;
-      --section-bg: #f7f3ed;
+      --offwhite: #1e1e20;
+      --warm-gray: #9a9590;
+      --text: #e0dbd3;
+      --card-bg: #2a2a2c;
+      --section-bg: #18181a;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -110,7 +110,7 @@
     .section h2 {
       font-family: 'Impact', 'Arial Narrow', sans-serif;
       font-size: 36px;
-      color: var(--navy);
+      color: var(--gold-light);
       letter-spacing: 1px;
       margin-bottom: 28px;
     }
@@ -122,10 +122,10 @@
       gap: 20px;
       align-items: flex-start;
       background: var(--card-bg);
-      border: 1px solid #e2ddd5;
+      border: 1px solid #38383a;
       border-radius: 6px;
       padding: 20px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
     }
 
     .step-num {
@@ -136,13 +136,14 @@
       min-width: 32px;
     }
 
-    .step-content h3 { font-weight: 600; font-size: 15px; color: var(--navy); margin-bottom: 4px; }
-    .step-content p { font-size: 14px; color: #5a5a5a; line-height: 1.6; }
+    .step-content h3 { font-weight: 600; font-size: 15px; color: var(--gold-light); margin-bottom: 4px; }
+    .step-content p { font-size: 14px; color: var(--warm-gray); line-height: 1.6; }
+    .step-content p strong { color: var(--text); }
 
     .patches-section {
       background: var(--section-bg);
-      border-top: 1px solid #e0d9cf;
-      border-bottom: 1px solid #e0d9cf;
+      border-top: 1px solid #2e2e30;
+      border-bottom: 1px solid #2e2e30;
     }
 
     .patches-inner { max-width: 680px; margin: 0 auto; padding: 48px 24px; }
@@ -150,17 +151,18 @@
     .patch-search {
       width: 100%;
       padding: 12px 16px;
-      border: 1px solid #d4cec6;
+      border: 1px solid #38383a;
       border-radius: 6px;
       font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
       font-size: 14px;
-      background: #fff;
+      background: var(--card-bg);
       color: var(--text);
       margin-bottom: 24px;
       outline: none;
       transition: border-color 0.2s;
     }
 
+    .patch-search::placeholder { color: #666668; }
     .patch-search:focus { border-color: var(--gold); }
 
     .patch-category { margin-bottom: 32px; }
@@ -169,8 +171,8 @@
       font-family: 'Impact', 'Arial Narrow', sans-serif;
       font-size: 18px;
       letter-spacing: 2px;
-      color: var(--mid);
-      border-bottom: 1px solid #d4cec6;
+      color: var(--gold);
+      border-bottom: 1px solid #38383a;
       padding-bottom: 8px;
       margin-bottom: 14px;
     }
@@ -183,17 +185,17 @@
 
     .patch-card {
       background: var(--card-bg);
-      border: 1px solid #e2ddd5;
+      border: 1px solid #38383a;
       border-radius: 6px;
       padding: 12px 14px;
       font-size: 13px;
       color: var(--text);
       line-height: 1.4;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
       transition: border-color 0.15s, box-shadow 0.15s;
     }
 
-    .patch-card:hover { border-color: var(--gold); box-shadow: 0 2px 8px rgba(201,168,76,0.15); }
+    .patch-card:hover { border-color: var(--gold); box-shadow: 0 2px 8px rgba(201,168,76,0.2); }
     .patch-card.hidden { display: none; }
 
     .patch-state {
@@ -205,7 +207,7 @@
       margin-bottom: 2px;
     }
 
-    .patch-name { font-weight: 600; color: var(--navy); display: block; }
+    .patch-name { font-weight: 600; color: var(--text); display: block; }
     .patch-variant { font-size: 11px; color: var(--gold); margin-top: 2px; display: block; }
 
     /* ===== LUCKY DAY BANNER ===== */
@@ -454,6 +456,17 @@
 
     footer a { color: var(--gold); text-decoration: none; }
 
+    .site-logo {
+      width: 96px;
+      height: 96px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      border: 2px solid var(--gold);
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
     @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
     .fade-up { opacity:0; animation: fadeUp 0.5s ease forwards; }
     .fade-up:nth-child(1){animation-delay:0.1s}
@@ -495,7 +508,7 @@
       width: 100%; border-radius: 3px;
       margin-top: 8px; display: block;
       object-fit: cover; aspect-ratio: 1 / 1;
-      background: #f0ece4;
+      background: #2e2e30;
     }
 
     @media(max-width:480px){
@@ -509,7 +522,7 @@
 <body>
   <header>
     <div class="header-inner">
-      <div class="badge">MICROPATCHES</div>
+      <img src="logo.png" alt="MicroPatches" class="site-logo">
       <h1>PATCH<br><span>EXCHANGE</span></h1>
       <div class="divider"></div>
       <p class="tagline">Trade your patch for a custom keychain or magnet — 1 for 1.</p>
@@ -525,7 +538,7 @@
         <div class="step-num">01</div>
         <div class="step-content">
           <h3>Search Our Lineup</h3>
-          <p>Type your agency, unit, or department in the search below. If we <strong>don't already have your patch</strong>, you're eligible for the exchange.</p>
+          <p>Type your agency, unit, or department <strong>and state</strong> in the search below. If we <strong>don't already have your patch</strong>, you're eligible for the exchange. <em style="color:var(--warm-gray);">(Include your state — e.g. "Auburn PD Alabama" — to avoid mix-ups with same-named agencies in other states.)</em></p>
         </div>
       </div>
       <div class="step fade-up">
@@ -555,8 +568,8 @@
   <section style="background: var(--section-bg); border-top: 1px solid #e0d9cf;">
     <div class="rewards">
       <div class="section-label">YOUR CHOICE</div>
-      <h2 style="font-family:'Impact', 'Arial Narrow',sans-serif;font-size:36px;color:var(--navy);letter-spacing:1px;margin-bottom:4px;">Pick Your Reward</h2>
-      <p style="font-size:14px;color:#5a5a5a;margin-bottom:0;">Each exchange earns you one of the following — made in your agency's patch design.</p>
+      <h2 style="font-family:'Impact', 'Arial Narrow',sans-serif;font-size:36px;color:var(--gold-light);letter-spacing:1px;margin-bottom:4px;">Pick Your Reward</h2>
+      <p style="font-size:14px;color:var(--warm-gray);margin-bottom:0;">Each exchange earns you one of the following — made in your patch design.</p>
       <div class="reward-options">
         <div class="reward-card">
           <div class="reward-icon">&#x1F511;</div>
@@ -575,11 +588,11 @@
   <section class="patches-section">
     <div class="patches-inner">
       <div class="section-label">CURRENT INVENTORY</div>
-      <h2 style="font-family:'Impact', 'Arial Narrow',sans-serif;font-size:36px;color:var(--navy);letter-spacing:1px;margin-bottom:6px;">Patches We Have</h2>
-      <p style="font-size:14px;color:#5a5a5a;margin-bottom:4px;">If your agency, unit, or department is <strong>not listed below</strong>, you're eligible to participate.</p>
-      <p style="font-size:13px;color:#8a8278;margin-bottom:24px;">We accept patches from <strong>law enforcement</strong>, <strong>military</strong>, <strong>EMS</strong> (including AMR and private services), and <strong>fire departments</strong>.</p>
+      <h2 style="font-family:'Impact', 'Arial Narrow',sans-serif;font-size:36px;color:var(--gold-light);letter-spacing:1px;margin-bottom:6px;">Patches We Have</h2>
+      <p style="font-size:14px;color:var(--warm-gray);margin-bottom:4px;">If your agency, unit, or department is <strong style="color:var(--text);">not listed below</strong>, you're eligible to participate.</p>
+      <p style="font-size:13px;color:#666668;margin-bottom:24px;">We accept patches from <strong style="color:var(--warm-gray);">law enforcement</strong>, <strong style="color:var(--warm-gray);">military</strong>, <strong style="color:var(--warm-gray);">EMS</strong> (including AMR and private services), and <strong style="color:var(--warm-gray);">fire departments</strong>.</p>
 
-      <input type="text" class="patch-search" placeholder="Search agency, unit, or department..." id="searchInput" oninput="filterPatches()">
+      <input type="text" class="patch-search" placeholder="Search agency + state, e.g. Auburn PD Alabama..." id="searchInput" oninput="filterPatches()">
 
       <div class="patch-category" id="cat-le">
         <h3>Law Enforcement</h3>
@@ -630,12 +643,12 @@
       </div>
 
       <!-- VARIATIONS REMINDER -->
-      <div style="background:#fdf8ee;border:1px solid #e8c97a;border-left:4px solid #c9a84c;
+      <div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.35);border-left:4px solid var(--gold);
                   border-radius:6px;padding:16px 18px;margin-bottom:20px;">
-        <p style="font-size:14px;color:#4a3a1a;line-height:1.7;margin:0;">
-          <strong style="color:#8a6a10;">&#x1F4F8; Have a patch variation?</strong>
+        <p style="font-size:14px;color:var(--warm-gray);line-height:1.7;margin:0;">
+          <strong style="color:var(--gold-light);">&#x1F4F8; Have a patch variation?</strong>
           We know patches come in variations — subdued, centennial, memorial, pink patch, and more.
-          If you have one of those, <strong>we still want it!</strong>
+          If you have one of those, <strong style="color:var(--text);">we still want it!</strong>
           Just include a photo of your patch when you submit, and we'll let you know if it's a good fit.
         </p>
       </div>
@@ -685,7 +698,7 @@
 
         <div class="form-group">
           <label>Agency / Unit / Department</label>
-          <input type="text" id="agencyInput" name="agency" placeholder="e.g. Mesa PD, AMR Phoenix, 82nd Airborne, Phoenix Fire Dept" required oninput="checkAgency()">
+          <input type="text" id="agencyInput" name="agency" placeholder="e.g. Mesa PD Arizona, AMR Phoenix AZ, 82nd Airborne, Phoenix Fire Dept" required oninput="checkAgency()">
         </div>
 
         <div class="form-group">
