@@ -714,9 +714,9 @@
     // ── Queue status helpers ──────────────────────────────────────────────────
 
     /**
-     * Look up the current queue status for an agency.
+     * Exact key lookup — used by the form's checkAgency() where the user
+     * has typed the full agency name they intend to submit.
      * Returns 'open' | 'pending' | 'locked'.
-     * Falls back to 'open' on any Firebase error so the form stays usable.
      */
     async function getAgencyStatus(agencyName) {
       if (!agencyName || agencyName.length < 2) return 'open';
@@ -730,25 +730,54 @@
       }
     }
 
+    /**
+     * Partial-match scan — used by the lucky day banner where the user may
+     * have typed only part of an agency name (e.g. "denver" matching
+     * "Denver Colorado PD"). Loads all queue entries and returns the most
+     * restrictive status found among any partial matches.
+     * Returns 'open' | 'pending' | 'locked'.
+     */
+    async function getAgencyStatusBySearch(searchTerm) {
+      if (!searchTerm || searchTerm.length < 2) return 'open';
+      try {
+        const snap = await get(ref(db, 'queue'));
+        if (!snap.exists()) return 'open';
+        const term  = searchTerm.toLowerCase();
+        let   found = 'open';
+        for (const entry of Object.values(snap.val())) {
+          const name = (entry.agencyName || '').toLowerCase();
+          if (name.includes(term) || term.includes(name)) {
+            const s = entry.status || 'pending';
+            if (s === 'locked')  { found = 'locked';  break; }
+            if (s === 'pending')   found = 'pending';
+          }
+        }
+        return found;
+      } catch (err) {
+        console.warn('Firebase read error:', err);
+        return 'open';
+      }
+    }
+
     // ── Lucky Day Banner ──────────────────────────────────────────────────────
 
-    /** Refresh the banner badge by reading live queue status from Firebase. */
-    async function updateLuckyBanner(agencyName) {
+    /** Refresh the banner badge using a partial search scan of all queue entries. */
+    async function updateLuckyBanner(searchTerm) {
       const badge    = document.getElementById('queueBadge');
       const badgeTxt = document.getElementById('queueBadgeText');
       const wBox     = document.getElementById('waitlistBox');
-      const status   = await getAgencyStatus(agencyName);
+      const status   = await getAgencyStatusBySearch(searchTerm);
 
       if (status === 'open') {
-        badge.className     = 'queue-badge open';
+        badge.className      = 'queue-badge open';
         badgeTxt.textContent = 'Spot Open \u2014 Be the First!';
-        wBox.style.display  = 'none';
+        wBox.style.display   = 'none';
       } else {
-        badge.className     = 'queue-badge pending';
+        badge.className      = 'queue-badge pending';
         badgeTxt.textContent = status === 'locked'
           ? 'Waitlist \u2014 Exchange In Progress'
           : 'Waitlist \u2014 Primary Spot Taken';
-        wBox.style.display  = 'block';
+        wBox.style.display   = 'block';
       }
     }
 
