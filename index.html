@@ -947,12 +947,17 @@
     // ── Patch inventory search / filter ───────────────────────────────────────
 
     window.filterPatches = function () {
-      const q     = document.getElementById('searchInput').value.trim().toLowerCase();
-      const cards = document.querySelectorAll('.patch-card');
+      const raw   = document.getElementById('searchInput').value.trim().toLowerCase();
+      // Normalize: strip commas, collapse spaces → split into tokens
+      // so "chandler, arizona" → ["chandler", "arizona"] and matches card text
+      const tokens = raw.replace(/,/g, ' ').split(/\s+/).filter(Boolean);
+      const q      = raw;  // keep raw for banner / Firebase lookup
+      const cards  = document.querySelectorAll('.patch-card');
       let anyVisible = false;
 
       cards.forEach(function (card) {
-        var match = q && card.textContent.toLowerCase().includes(q);
+        const text  = card.textContent.toLowerCase();
+        var match = tokens.length > 0 && tokens.every(function (t) { return text.includes(t); });
         if (!q || match) {
           card.classList.remove('hidden');
           if (q) anyVisible = true;
