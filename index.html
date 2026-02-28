@@ -405,11 +405,12 @@
       letter-spacing: 2px;
       cursor: pointer;
       margin-top: 8px;
-      transition: background 0.2s, transform 0.1s;
+      transition: background 0.2s, transform 0.1s, opacity 0.2s;
     }
 
-    .submit-btn:hover { background: var(--gold-light); transform: translateY(-1px); }
-    .submit-btn:active { transform: translateY(0); }
+    .submit-btn:hover:not(:disabled) { background: var(--gold-light); transform: translateY(-1px); }
+    .submit-btn:active:not(:disabled) { transform: translateY(0); }
+    .submit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
     .form-note {
       font-size: 12px;
@@ -520,12 +521,12 @@
       <p style="font-size:14px;color:#5a5a5a;margin-bottom:0;">Each exchange earns you one of the following — made in your agency's patch design.</p>
       <div class="reward-options">
         <div class="reward-card">
-          <div class="reward-icon">🔑</div>
+          <div class="reward-icon">&#x1F511;</div>
           <h3>Keychain</h3>
           <p>3D printed, durable, full-color patch keychain you can carry every day.</p>
         </div>
         <div class="reward-card">
-          <div class="reward-icon">🧲</div>
+          <div class="reward-icon">&#x1F9F2;</div>
           <h3>Magnet</h3>
           <p>High-quality patch magnet — perfect for your locker, vehicle, or fridge.</p>
         </div>
@@ -591,7 +592,7 @@
 
       <!-- LUCKY DAY BANNER -->
       <div id="luckyDay">
-        <div class="lucky-emoji">🎉</div>
+        <div class="lucky-emoji">&#x1F389;</div>
         <h3>It's Your Lucky Day!</h3>
         <p id="luckyMsg">We don't have your patch yet — which means you're eligible for the exchange. Claim your spot now and get a custom keychain or magnet of your agency's patch.</p>
         <div id="queueBadge" class="queue-badge open">
@@ -599,10 +600,10 @@
           <span id="queueBadgeText">Spot Open — Be the First!</span>
         </div>
         <div id="waitlistBox" class="waitlist-box" style="display:none;">
-          ⚠️ <strong>Heads up:</strong> Someone has already submitted for this agency but we haven't received their patch yet. You can still fill out the form and be placed on the <strong>waitlist</strong>. If the primary submission falls through, we'll contact you next — no patch required from you until then.
+          &#x26A0;&#xFE0F; <strong>Heads up:</strong> Someone has already submitted for this agency but we haven't received their patch yet. You can still fill out the form and be placed on the <strong>waitlist</strong>. If the primary submission falls through, we'll contact you next — no patch required from you until then.
         </div>
         <br>
-        <button class="claim-btn" onclick="scrollToForm()">CLAIM YOUR SPOT →</button>
+        <button class="claim-btn" onclick="scrollToForm()">CLAIM YOUR SPOT &rarr;</button>
       </div>
 
     </div>
@@ -658,9 +659,9 @@
 
         <button type="submit" class="submit-btn" id="submitBtn">SUBMIT EXCHANGE REQUEST</button>
         <p class="form-note">
-          After submitting, we'll email you within 24–48 hours with confirmation and our mailing address.
+          After submitting, we'll email you within 24&ndash;48 hours with confirmation and our mailing address.
           <strong>Do NOT send your patch until you've heard from us.</strong><br><br>
-          📦 <strong>Shipping breakdown:</strong> You cover postage to send your patch to us — we cover shipping your keychain or magnet back to you. Totally free on our end.
+          &#x1F4E6; <strong>Shipping breakdown:</strong> You cover postage to send your patch to us — we cover shipping your keychain or magnet back to you. Totally free on our end.
         </p>
       </form>
 
@@ -669,125 +670,482 @@
   </section>
 
   <footer id="footerEl">
-    <p>© 2025 MicroPatches · All Rights Reserved</p>
+    <p>&copy; 2025 MicroPatches &middot; All Rights Reserved</p>
     <p style="margin-top:6px;"><a href="https://instagram.com/micropatches" target="_blank">@MicroPatches</a> on Instagram</p>
   </footer>
 
-  <script>
-    // NOTE:
-    // Your original queue system used `window.storage`, which does not exist on GitHub Pages.
-    // These functions are left here so the UI doesn't throw errors, but queue/admin features are disabled.
-    // Firebase submission below DOES work.
+  <script type="module">
+    import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getDatabase, ref, push, get, set, update, remove }
+                               from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 
-    function filterPatches() {
-      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+    // ── Firebase initialisation ───────────────────────────────────────────────
+    const firebaseConfig = {
+      apiKey:            "AIzaSyDkNCYz7DXKF2Ku8B4FfN1gXdVV3P3B2YE",
+      authDomain:        "micropatches-exchange.firebaseapp.com",
+      databaseURL:       "https://micropatches-exchange-default-rtdb.firebaseio.com",
+      projectId:         "micropatches-exchange",
+      storageBucket:     "micropatches-exchange.firebasestorage.app",
+      messagingSenderId: "953111257361",
+      appId:             "1:953111257361:web:e18c2c403e222cf97b6cb0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    // ── Utilities ─────────────────────────────────────────────────────────────
+
+    /** Convert an agency name to a safe Firebase key. */
+    function sanitizeKey(name) {
+      return name.toLowerCase().trim()
+        .replace(/[.#$[\]/]/g, '_')
+        .replace(/\s+/g, '_')
+        .replace(/_+/g, '_')
+        .substring(0, 100);
+    }
+
+    /** Escape HTML for safe insertion into admin panel. */
+    function esc(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // ── Queue status helpers ──────────────────────────────────────────────────
+
+    /**
+     * Look up the current queue status for an agency.
+     * Returns 'open' | 'pending' | 'locked'.
+     * Falls back to 'open' on any Firebase error so the form stays usable.
+     */
+    async function getAgencyStatus(agencyName) {
+      if (!agencyName || agencyName.length < 2) return 'open';
+      try {
+        const snap = await get(ref(db, 'queue/' + sanitizeKey(agencyName)));
+        if (!snap.exists()) return 'open';
+        return snap.val().status || 'pending';
+      } catch (err) {
+        console.warn('Firebase read error:', err);
+        return 'open';
+      }
+    }
+
+    // ── Lucky Day Banner ──────────────────────────────────────────────────────
+
+    /** Refresh the banner badge by reading live queue status from Firebase. */
+    async function updateLuckyBanner(agencyName) {
+      const badge    = document.getElementById('queueBadge');
+      const badgeTxt = document.getElementById('queueBadgeText');
+      const wBox     = document.getElementById('waitlistBox');
+      const status   = await getAgencyStatus(agencyName);
+
+      if (status === 'open') {
+        badge.className     = 'queue-badge open';
+        badgeTxt.textContent = 'Spot Open \u2014 Be the First!';
+        wBox.style.display  = 'none';
+      } else {
+        badge.className     = 'queue-badge pending';
+        badgeTxt.textContent = status === 'locked'
+          ? 'Waitlist \u2014 Exchange In Progress'
+          : 'Waitlist \u2014 Primary Spot Taken';
+        wBox.style.display  = 'block';
+      }
+    }
+
+    // ── Patch inventory search / filter ───────────────────────────────────────
+
+    window.filterPatches = function () {
+      const q     = document.getElementById('searchInput').value.trim().toLowerCase();
       const cards = document.querySelectorAll('.patch-card');
       let anyVisible = false;
 
-      cards.forEach(card => {
-        const match = q && card.textContent.toLowerCase().includes(q);
-        if (!q || match) { card.classList.remove('hidden'); if (q) anyVisible = true; }
-        else card.classList.add('hidden');
+      cards.forEach(function (card) {
+        var match = q && card.textContent.toLowerCase().includes(q);
+        if (!q || match) {
+          card.classList.remove('hidden');
+          if (q) anyVisible = true;
+        } else {
+          card.classList.add('hidden');
+        }
       });
 
-      document.querySelectorAll('.patch-category').forEach(cat => {
+      document.querySelectorAll('.patch-category').forEach(function (cat) {
         if (!q) { cat.style.display = ''; return; }
         cat.style.display = cat.querySelectorAll('.patch-card:not(.hidden)').length > 0 ? '' : 'none';
       });
 
-      const lucky = document.getElementById('luckyDay');
-      if (!q || anyVisible || q.length < 2) { lucky.style.display = 'none'; return; }
+      var lucky = document.getElementById('luckyDay');
+      // Show banner only when there IS a query, it's 2+ chars, and nothing matched
+      if (!q || q.length < 2 || anyVisible) {
+        lucky.style.display = 'none';
+        return;
+      }
 
-      // Without queue storage, we simply show eligibility banner when not found.
       lucky.style.display = 'block';
-      const badge = document.getElementById('queueBadge');
-      const wBox = document.getElementById('waitlistBox');
-      const msg = document.getElementById('luckyMsg');
+      updateLuckyBanner(document.getElementById('searchInput').value.trim());
+    };
 
-      badge.className = 'queue-badge open';
-      badge.innerHTML = '<span class="queue-dot"></span><span>Spot Open — Be the First!</span>';
-      wBox.style.display = 'none';
-      msg.textContent = "We don't have your patch yet — which means you're eligible for the exchange. Claim your spot now and get a custom keychain or magnet of your agency's patch.";
-    }
+    // ── Form — agency real-time check (debounced) ─────────────────────────────
 
-    let checkTimer = null;
+    var _checkTimer = null;
 
-    function checkAgency() {
-      clearTimeout(checkTimer);
-      checkTimer = setTimeout(() => {
-        const agency = document.getElementById('agencyInput').value.trim();
-        const notice = document.getElementById('agencyNotice');
-        const btn = document.getElementById('submitBtn');
+    window.checkAgency = function () {
+      clearTimeout(_checkTimer);
+      _checkTimer = setTimeout(async function () {
+        var agency = document.getElementById('agencyInput').value.trim();
+        var notice = document.getElementById('agencyNotice');
+        var btn    = document.getElementById('submitBtn');
 
-        if (agency.length < 3) { notice.style.display = 'none'; btn.textContent = 'SUBMIT EXCHANGE REQUEST'; return; }
+        if (agency.length < 3) {
+          notice.style.display = 'none';
+          btn.textContent      = 'SUBMIT EXCHANGE REQUEST';
+          btn.disabled         = false;
+          return;
+        }
 
-        // Queue logic disabled on GitHub Pages unless you migrate it to Firebase.
-        notice.className = 'agency-notice open';
+        var status = await getAgencyStatus(agency);
         notice.style.display = 'block';
-        notice.innerHTML = '✅ <strong>Spot available!</strong> (Queue logic is currently disabled on this build — submissions still go through.)';
-        btn.textContent = 'SUBMIT EXCHANGE REQUEST';
-      }, 400);
-    }
 
-    function scrollToForm() {
-      const search = document.getElementById('searchInput').value.trim();
+        if (status === 'open') {
+          notice.className = 'agency-notice open';
+          notice.innerHTML = '\u2705 <strong>Spot available!</strong> You will be the first submission for this agency.';
+          btn.textContent  = 'CLAIM PRIMARY SPOT \u2192';
+          btn.disabled     = false;
+        } else if (status === 'pending') {
+          notice.className = 'agency-notice pending';
+          notice.innerHTML = '\u26A0\uFE0F <strong>Primary spot taken.</strong> Submitting will add you to the <strong>waitlist</strong> for this agency.';
+          btn.textContent  = 'JOIN WAITLIST \u2192';
+          btn.disabled     = false;
+        } else {
+          notice.className = 'agency-notice locked';
+          notice.innerHTML = '\uD83D\uDD12 <strong>Submissions closed.</strong> This agency\'s patch has been received and the exchange is in progress.';
+          btn.textContent  = 'SUBMISSIONS CLOSED';
+          btn.disabled     = true;
+        }
+      }, 400);
+    };
+
+    // ── Scroll-to-form (Claim button) ─────────────────────────────────────────
+
+    window.scrollToForm = function () {
+      var search = document.getElementById('searchInput').value.trim();
       if (search.length >= 2) {
         document.getElementById('agencyInput').value = search;
-        checkAgency();
+        window.checkAgency();
       }
       document.getElementById('formSection').scrollIntoView({ behavior: 'smooth' });
-      setTimeout(() => document.getElementById('agencyInput').focus(), 650);
-    }
-  </script>
+      setTimeout(function () { document.getElementById('agencyInput').focus(); }, 650);
+    };
 
-  <!-- FIREBASE SUBMISSION (WORKING) -->
-  <!-- FIREBASE SUBMISSION (WORKING) -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-  import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js";
+    // ── Form submission ───────────────────────────────────────────────────────
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDkNCYz7DXKF2Ku8B4FfN1gXdVV3P3B2YE",
-    authDomain: "micropatches-exchange.firebaseapp.com",
-    databaseURL: "https://micropatches-exchange-default-rtdb.firebaseio.com",
-    projectId: "micropatches-exchange",
-    storageBucket: "micropatches-exchange.firebasestorage.app",
-    messagingSenderId: "953111257361",
-    appId: "1:953111257361:web:e18c2403e222cf97b6cb0"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  const form = document.getElementById("exchangeForm");
-
-  console.log("Firebase initialized.");
-  console.log("Form found:", !!form);
-
-  if (form) {
-    form.addEventListener("submit", async (e) => {
+    document.getElementById('exchangeForm').addEventListener('submit', async function (e) {
       e.preventDefault();
 
+      var btn        = document.getElementById('submitBtn');
+      var successMsg = document.getElementById('successMsg');
+      var origLabel  = btn.textContent;
+
+      btn.textContent = 'SUBMITTING\u2026';
+      btn.disabled    = true;
+
+      var firstName = document.getElementById('firstName').value.trim();
+      var lastName  = document.getElementById('lastName').value.trim();
+      var email     = document.getElementById('emailInput').value.trim();
+      var agency    = document.getElementById('agencyInput').value.trim();
+      var state     = document.getElementById('stateInput').value.trim();
+      var reward    = document.getElementById('rewardSelect').value;
+      var notes     = document.getElementById('notesInput').value.trim();
+      var agencyKey = sanitizeKey(agency);
+
       try {
-        const data = Object.fromEntries(new FormData(form).entries());
-        console.log("Data about to push:", data);
+        // Re-check status right before writing to guard against race conditions
+        var currentStatus = await getAgencyStatus(agency);
 
-        const result = await push(ref(db, "exchangeQueue"), {
-          ...data,
+        if (currentStatus === 'locked') {
+          alert('This agency\'s exchange is already in progress. New submissions are not being accepted.');
+          btn.textContent = 'SUBMISSIONS CLOSED';
+          return;
+        }
+
+        var isWaitlist = (currentStatus === 'pending');
+        var position   = isWaitlist ? 'WAITLIST' : 'PRIMARY';
+
+        var submission = {
+          firstName: firstName,
+          lastName:  lastName,
+          email:     email,
+          agency:    agency,
+          state:     state,
+          reward:    reward,
+          notes:     notes,
+          position:  position,
           timestamp: Date.now()
-        });
+        };
 
-        console.log("Firebase push key:", result.key);
-        alert("Submission received.");
-        form.reset();
+        // Write to Firebase
+        if (!isWaitlist) {
+          // Claim the primary spot
+          await set(ref(db, 'queue/' + agencyKey), {
+            agencyName: agency,
+            status:     'pending',
+            primary:    submission
+          });
+        } else {
+          // Append to waitlist
+          await push(ref(db, 'queue/' + agencyKey + '/waitlist'), submission);
+        }
+
+        // Email notification via Formspree (non-fatal if it fails)
+        try {
+          await fetch('https://formspree.io/f/mqednono', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({
+              _subject:    '[' + position + '] Exchange Request: ' + agency,
+              name:        firstName + ' ' + lastName,
+              email:       email,
+              agency:      agency,
+              state:       state,
+              reward:      reward,
+              notes:       notes,
+              position:    position,
+              submittedAt: new Date().toISOString()
+            })
+          });
+        } catch (fsErr) {
+          console.warn('Formspree notification failed (non-fatal):', fsErr);
+        }
+
+        // Show success
+        document.getElementById('exchangeForm').style.display = 'none';
+        successMsg.style.display = 'block';
+        successMsg.className     = 'success-msg ' + (isWaitlist ? 'waitlist' : 'first');
+
+        if (!isWaitlist) {
+          successMsg.innerHTML =
+            '<h4>\uD83C\uDF89 You\'re In!</h4>' +
+            '<p>You\'ve claimed the <strong>primary spot</strong> for <strong>' + esc(agency) + '</strong>.<br>' +
+            'We\'ll email <strong>' + esc(email) + '</strong> within 24\u201348 hours with our mailing address.<br><br>' +
+            '<strong>Do NOT send your patch until you hear from us.</strong></p>';
+        } else {
+          successMsg.innerHTML =
+            '<h4>\uD83D\uDCCB You\'re on the Waitlist!</h4>' +
+            '<p>You\'ve been added to the <strong>waitlist</strong> for <strong>' + esc(agency) + '</strong>.<br>' +
+            'If the primary falls through, we\'ll contact you at <strong>' + esc(email) + '</strong> next.<br><br>' +
+            '<strong>No action needed from you until then.</strong></p>';
+        }
+
       } catch (err) {
-        console.error("Firebase error:", err);
-        alert("Firebase error. Check console.");
+        console.error('Submission error:', err);
+        btn.textContent = origLabel;
+        btn.disabled    = false;
+        alert('There was a problem submitting your request. Please try again.');
       }
     });
-  } else {
-    console.error("No form found on page");
-  }
-</script>
+
+    // ── Admin Panel ───────────────────────────────────────────────────────────
+
+    var _footerTaps  = 0;
+    var _footerTimer = null;
+
+    document.getElementById('footerEl').addEventListener('click', function () {
+      _footerTaps++;
+      clearTimeout(_footerTimer);
+      _footerTimer = setTimeout(function () { _footerTaps = 0; }, 2500);
+
+      if (_footerTaps >= 5) {
+        _footerTaps = 0;
+        var pw = prompt('Admin Password:');
+        if (pw === null) return;
+        if (pw === 'Abrnpd216!!') {
+          openAdminPanel();
+        } else {
+          alert('Incorrect password.');
+        }
+      }
+    });
+
+    // These must be on window because they're called from dynamically generated onclick attrs
+    window.adminMarkReceived = async function (key) {
+      if (!confirm('Mark this agency\'s patch as received? This locks the queue for new submissions.')) return;
+      try {
+        await update(ref(db, 'queue/' + key), { status: 'locked', receivedAt: Date.now() });
+        await renderAdminData();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    };
+
+    window.adminClearQueue = async function (key) {
+      if (!confirm('Clear the entire queue for this agency? This cannot be undone.')) return;
+      try {
+        await remove(ref(db, 'queue/' + key));
+        await renderAdminData();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    };
+
+    function openAdminPanel() {
+      var existing = document.getElementById('adminPanel');
+      if (existing) existing.remove();
+
+      var panel = document.createElement('div');
+      panel.id  = 'adminPanel';
+      Object.assign(panel.style, {
+        position:   'fixed',
+        top:        '0',
+        left:       '0',
+        right:      '0',
+        bottom:     '0',
+        background: 'rgba(8,12,22,0.97)',
+        zIndex:     '9999',
+        overflowY:  'auto',
+        padding:    '24px',
+        fontFamily: "-apple-system,'Helvetica Neue',Arial,sans-serif"
+      });
+
+      panel.innerHTML =
+        '<div style="max-width:740px;margin:0 auto;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;' +
+                      'border-bottom:1px solid #1e293b;padding-bottom:16px;margin-bottom:24px;">' +
+            '<div>' +
+              '<h2 style="color:#c9a84c;font-family:Impact,sans-serif;font-size:24px;' +
+                         'letter-spacing:2px;margin-bottom:3px;">ADMIN PANEL</h2>' +
+              '<p style="color:#334155;font-size:12px;">MicroPatches Exchange \u2014 Queue Manager</p>' +
+            '</div>' +
+            '<button onclick="document.getElementById(\'adminPanel\').remove()"' +
+              ' style="background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;' +
+                      'padding:8px 16px;border-radius:4px;cursor:pointer;font-size:13px;font-weight:600;">' +
+              '\u2715 CLOSE' +
+            '</button>' +
+          '</div>' +
+          '<div id="adminContent" style="color:#f2ede6;">' +
+            '<p style="color:#334155;">Loading queue data\u2026</p>' +
+          '</div>' +
+        '</div>';
+
+      document.body.appendChild(panel);
+      renderAdminData();
+    }
+
+    async function renderAdminData() {
+      var content = document.getElementById('adminContent');
+      if (!content) return;
+      content.innerHTML = '<p style="color:#334155;">Loading\u2026</p>';
+
+      try {
+        var snap = await get(ref(db, 'queue'));
+
+        if (!snap.exists()) {
+          content.innerHTML = '<p style="color:#475569;text-align:center;padding:48px 0;">Queue is empty \u2014 no submissions yet.</p>';
+          return;
+        }
+
+        var queue   = snap.val();
+        var entries = Object.entries(queue);
+
+        if (entries.length === 0) {
+          content.innerHTML = '<p style="color:#475569;text-align:center;padding:48px 0;">Queue is empty.</p>';
+          return;
+        }
+
+        var statusMeta = {
+          pending: { color: '#f59e0b', label: 'PENDING' },
+          locked:  { color: '#ef4444', label: 'RECEIVED / LOCKED' }
+        };
+
+        var html = '<p style="color:#475569;font-size:13px;margin-bottom:16px;">' +
+          entries.length + ' agenc' + (entries.length === 1 ? 'y' : 'ies') + ' in queue</p>';
+
+        for (var i = 0; i < entries.length; i++) {
+          var key      = entries[i][0];
+          var entry    = entries[i][1];
+          var status   = entry.status || 'pending';
+          var meta     = statusMeta[status] || statusMeta.pending;
+          var primary  = entry.primary  || {};
+          var waitlist = Object.values(entry.waitlist || {});
+
+          var markBtn = status !== 'locked'
+            ? '<button onclick="adminMarkReceived(\'' + esc(key) + '\')"' +
+              ' style="background:#064e3b;color:#6ee7b7;border:1px solid #065f46;' +
+                      'padding:7px 13px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">' +
+              '\u2713 Mark Received</button>'
+            : '';
+
+          var clearBtn =
+            '<button onclick="adminClearQueue(\'' + esc(key) + '\')"' +
+            ' style="background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;' +
+                    'padding:7px 13px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">' +
+            '\uD83D\uDDD1 Clear Queue</button>';
+
+          var primaryHtml = primary.firstName
+            ? '<p style="color:#f1f5f9;font-size:14px;margin-bottom:3px;"><strong>' +
+                esc(primary.firstName) + ' ' + esc(primary.lastName) + '</strong></p>' +
+              '<p style="color:#94a3b8;font-size:13px;margin-bottom:2px;">\uD83D\uDCE7 ' + esc(primary.email) + '</p>' +
+              '<p style="color:#94a3b8;font-size:13px;margin-bottom:2px;">\uD83D\uDCCD ' +
+                esc(primary.state) + ' &nbsp;&middot;&nbsp; \uD83C\uDF81 ' + esc(primary.reward) + '</p>' +
+              (primary.notes ? '<p style="color:#64748b;font-size:12px;margin-bottom:2px;">\uD83D\uDCDD ' + esc(primary.notes) + '</p>' : '') +
+              '<p style="color:#1e293b;font-size:11px;margin-top:4px;">' +
+                (primary.timestamp ? new Date(primary.timestamp).toLocaleString() : '') + '</p>'
+            : '<p style="color:#334155;font-size:13px;">No primary data on record.</p>';
+
+          var waitlistHtml = '';
+          if (waitlist.length > 0) {
+            var wItems = waitlist.map(function (w, wi) {
+              return '<div style="background:#080d18;border-radius:4px;padding:10px;margin-bottom:8px;">' +
+                '<p style="color:#f1f5f9;font-size:13px;margin-bottom:2px;">' +
+                  (wi + 1) + '. <strong>' + esc(w.firstName) + ' ' + esc(w.lastName) + '</strong></p>' +
+                '<p style="color:#94a3b8;font-size:12px;">\uD83D\uDCE7 ' + esc(w.email) +
+                  ' &nbsp;&middot;&nbsp; \uD83D\uDCCD ' + esc(w.state) +
+                  ' &nbsp;&middot;&nbsp; \uD83C\uDF81 ' + esc(w.reward) + '</p>' +
+                (w.notes ? '<p style="color:#64748b;font-size:12px;margin-top:2px;">\uD83D\uDCDD ' + esc(w.notes) + '</p>' : '') +
+                '<p style="color:#1e293b;font-size:11px;margin-top:3px;">' +
+                  (w.timestamp ? new Date(w.timestamp).toLocaleString() : '') + '</p>' +
+              '</div>';
+            }).join('');
+
+            waitlistHtml =
+              '<div style="border-top:1px solid #1e293b;padding-top:12px;margin-top:12px;">' +
+                '<p style="color:#f59e0b;font-size:11px;letter-spacing:1.5px;font-weight:700;margin-bottom:8px;">' +
+                  'WAITLIST (' + waitlist.length + ')</p>' +
+                wItems +
+              '</div>';
+          }
+
+          html +=
+            '<div style="background:#0f172a;border:1px solid #1e293b;' +
+                        'border-left:3px solid ' + meta.color + ';border-radius:8px;' +
+                        'padding:18px;margin-bottom:14px;">' +
+              '<div style="display:flex;justify-content:space-between;align-items:flex-start;' +
+                          'flex-wrap:wrap;gap:10px;margin-bottom:14px;">' +
+                '<div>' +
+                  '<h3 style="color:#e8c97a;font-size:17px;margin-bottom:6px;">' + esc(entry.agencyName || key) + '</h3>' +
+                  '<span style="background:' + meta.color + '22;color:' + meta.color + ';' +
+                               'border:1px solid ' + meta.color + '55;padding:3px 10px;' +
+                               'border-radius:12px;font-size:11px;font-weight:700;letter-spacing:1px;">' +
+                    meta.label +
+                  '</span>' +
+                '</div>' +
+                '<div style="display:flex;gap:8px;flex-wrap:wrap;">' + markBtn + clearBtn + '</div>' +
+              '</div>' +
+              '<div style="border-top:1px solid #1e293b;padding-top:12px;">' +
+                '<p style="color:#c9a84c;font-size:11px;letter-spacing:1.5px;font-weight:700;margin-bottom:8px;">PRIMARY</p>' +
+                primaryHtml +
+              '</div>' +
+              waitlistHtml +
+            '</div>';
+        }
+
+        content.innerHTML = html;
+
+      } catch (err) {
+        console.error('Admin load error:', err);
+        content.innerHTML = '<p style="color:#fca5a5;">Error loading queue: ' + esc(err.message) + '</p>';
+      }
+    }
+
+  </script>
 </body>
 </html>
