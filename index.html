@@ -461,6 +461,43 @@
     .fade-up:nth-child(3){animation-delay:0.3s}
     .fade-up:nth-child(4){animation-delay:0.4s}
 
+    /* Photo upload in form */
+    .photo-upload-area {
+      border: 1.5px dashed rgba(255,255,255,0.2);
+      border-radius: 5px;
+      padding: 18px 14px;
+      background: rgba(255,255,255,0.04);
+      cursor: pointer;
+      transition: border-color 0.2s;
+      position: relative;
+      text-align: center;
+    }
+    .photo-upload-area:hover { border-color: var(--gold); }
+    .photo-upload-area input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer;
+      width: 100%; height: 100%;
+    }
+    .photo-guidelines {
+      font-size: 12px;
+      color: rgba(255,255,255,0.35);
+      line-height: 1.8;
+      margin-bottom: 10px;
+      text-align: left;
+    }
+    .photo-guidelines strong { color: rgba(255,255,255,0.55); }
+    #photoPreviewThumb {
+      width: 100%; max-width: 160px;
+      border-radius: 4px; display: block;
+      margin: 10px auto 0;
+    }
+    /* Inventory card photo */
+    .patch-photo {
+      width: 100%; border-radius: 3px;
+      margin-top: 8px; display: block;
+      object-fit: cover; aspect-ratio: 1 / 1;
+      background: #f0ece4;
+    }
+
     @media(max-width:480px){
       .form-row{grid-template-columns:1fr}
       .reward-options{grid-template-columns:1fr}
@@ -657,6 +694,22 @@
           <textarea id="notesInput" name="notes" placeholder="Notes, questions, patch details, etc."></textarea>
         </div>
 
+        <div class="form-group">
+          <label>Photo of Your Patch <span style="color:var(--warm-gray);font-weight:400;text-transform:none;letter-spacing:0;">(optional, but very helpful)</span></label>
+          <p class="photo-guidelines">
+            <strong>Tips for a great shot:</strong><br>
+            &bull; Lay the patch flat on a plain, light-colored surface<br>
+            &bull; Use natural daylight or a bright lamp &mdash; avoid direct flash<br>
+            &bull; Fill the frame with the patch and keep it in sharp focus<br>
+            &bull; JPEG, PNG, or WebP &mdash; max 10&nbsp;MB
+          </p>
+          <div class="photo-upload-area" id="photoUploadArea">
+            <input type="file" id="patchPhotoInput" accept="image/jpeg,image/png,image/webp">
+            <span id="photoUploadLabel" style="color:rgba(255,255,255,0.4);font-size:13px;">&#x1F4F7;&nbsp; Tap to attach a photo of your patch</span>
+            <img id="photoPreviewThumb" style="display:none;" alt="Patch preview">
+          </div>
+        </div>
+
         <button type="submit" class="submit-btn" id="submitBtn">SUBMIT EXCHANGE REQUEST</button>
         <p class="form-note">
           After submitting, we'll email you within 24&ndash;48 hours with confirmation and our mailing address.
@@ -678,6 +731,8 @@
     import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import { getDatabase, ref, push, get, set, update, remove }
                                from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+    import { getStorage, ref as sRef, uploadBytes, getDownloadURL }
+                               from "https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js";
 
     // ── Firebase initialisation ───────────────────────────────────────────────
     const firebaseConfig = {
@@ -690,8 +745,9 @@
       appId:             "1:953111257361:web:e18c2c403e222cf97b6cb0"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db  = getDatabase(app);
+    const app     = initializeApp(firebaseConfig);
+    const db      = getDatabase(app);
+    const storage = getStorage(app);
 
     // ── Utilities ─────────────────────────────────────────────────────────────
 
@@ -710,6 +766,87 @@
         .replace(/&/g, '&amp;').replace(/</g, '&lt;')
         .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
+
+    // ── Image utilities ───────────────────────────────────────────────────────
+
+    /** Resize + compress an image File to a JPEG Blob (max 1400px, q=0.82). */
+    function compressImage(file) {
+      return new Promise(function (resolve) {
+        var img = new Image();
+        var url = URL.createObjectURL(file);
+        img.onload = function () {
+          URL.revokeObjectURL(url);
+          var maxDim = 1400, q = 0.82;
+          var scale  = Math.min(1, maxDim / Math.max(img.width, img.height));
+          var canvas = document.createElement('canvas');
+          canvas.width  = Math.round(img.width  * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(resolve, 'image/jpeg', q);
+        };
+        img.src = url;
+      });
+    }
+
+    /** Compress a file, upload to Firebase Storage path, return download URL. */
+    async function uploadToStorage(file, path) {
+      var blob    = await compressImage(file);
+      var fileRef = sRef(storage, path);
+      await uploadBytes(fileRef, blob, { contentType: 'image/jpeg' });
+      return getDownloadURL(fileRef);
+    }
+
+    // ── Inventory photo loader ────────────────────────────────────────────────
+
+    /**
+     * Fetch all agency photo URLs from Firebase and inject them into matching
+     * patch cards in the inventory. Key formula:
+     *   sanitizeKey(patchName + (variant ? ' ' + variant : ''))
+     */
+    async function loadAgencyPhotos() {
+      try {
+        var snap = await get(ref(db, 'agencyPhotos'));
+        if (!snap.exists()) return;
+        var photos = snap.val();
+        document.querySelectorAll('.patch-card').forEach(function (card) {
+          var name    = (card.querySelector('.patch-name')?.textContent    || '').trim();
+          var variant = (card.querySelector('.patch-variant')?.textContent || '').trim();
+          var key     = sanitizeKey(variant ? name + ' ' + variant : name);
+          if (photos[key]) {
+            // Remove old photo if refreshing
+            var old = card.querySelector('.patch-photo');
+            if (old) old.remove();
+            var img    = document.createElement('img');
+            img.src    = photos[key];
+            img.alt    = name;
+            img.className = 'patch-photo';
+            img.loading   = 'lazy';
+            card.appendChild(img);
+          }
+        });
+      } catch (err) {
+        console.warn('loadAgencyPhotos error:', err);
+      }
+    }
+
+    // Load photos on page init
+    loadAgencyPhotos();
+
+    // ── Photo input preview ───────────────────────────────────────────────────
+
+    document.getElementById('patchPhotoInput').addEventListener('change', function () {
+      var file  = this.files[0];
+      var label = document.getElementById('photoUploadLabel');
+      var thumb = document.getElementById('photoPreviewThumb');
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        thumb.src          = e.target.result;
+        thumb.style.display = 'block';
+        label.textContent   = '\u2713 ' + file.name;
+      };
+      reader.readAsDataURL(file);
+    });
 
     // ── Queue status helpers ──────────────────────────────────────────────────
 
@@ -900,6 +1037,21 @@
         var isWaitlist = (currentStatus === 'pending');
         var position   = isWaitlist ? 'WAITLIST' : 'PRIMARY';
 
+        // Upload patch photo if provided
+        var photoUrl   = null;
+        var photoFile  = document.getElementById('patchPhotoInput').files[0];
+        if (photoFile) {
+          btn.textContent = 'UPLOADING PHOTO\u2026';
+          try {
+            photoUrl = await uploadToStorage(
+              photoFile,
+              'patch-photos/submissions/' + agencyKey + '/' + Date.now()
+            );
+          } catch (upErr) {
+            console.warn('Photo upload failed (non-fatal):', upErr);
+          }
+        }
+
         var submission = {
           firstName: firstName,
           lastName:  lastName,
@@ -909,6 +1061,7 @@
           reward:    reward,
           notes:     notes,
           position:  position,
+          photoUrl:  photoUrl,
           timestamp: Date.now()
         };
 
@@ -939,6 +1092,7 @@
               reward:      reward,
               notes:       notes,
               position:    position,
+              photoUrl:    photoUrl || '(none)',
               submittedAt: new Date().toISOString()
             })
           });
@@ -1050,6 +1204,20 @@
               '\u2715 CLOSE' +
             '</button>' +
           '</div>' +
+          '<div style="display:flex;gap:8px;margin-bottom:20px;">' +
+            '<button id="adminTabQueue" onclick="renderAdminData()"' +
+              ' style="background:#c9a84c22;color:#c9a84c;border:1px solid #c9a84c55;' +
+                      'padding:7px 18px;border-radius:4px;cursor:pointer;font-size:12px;' +
+                      'font-weight:700;letter-spacing:1px;">' +
+              'QUEUE' +
+            '</button>' +
+            '<button id="adminTabPhotos" onclick="renderPhotoManager()"' +
+              ' style="background:transparent;color:#64748b;border:1px solid #1e293b;' +
+                      'padding:7px 18px;border-radius:4px;cursor:pointer;font-size:12px;' +
+                      'font-weight:700;letter-spacing:1px;">' +
+              'AGENCY PHOTOS' +
+            '</button>' +
+          '</div>' +
           '<div id="adminContent" style="color:#f2ede6;">' +
             '<p style="color:#334155;">Loading queue data\u2026</p>' +
           '</div>' +
@@ -1109,15 +1277,28 @@
                     'padding:7px 13px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">' +
             '\uD83D\uDDD1 Clear Queue</button>';
 
+          var photoThumb = primary.photoUrl
+            ? '<a href="' + esc(primary.photoUrl) + '" target="_blank" style="flex-shrink:0;">' +
+                '<img src="' + esc(primary.photoUrl) + '" alt="Patch photo"' +
+                  ' style="width:80px;height:80px;object-fit:cover;border-radius:5px;' +
+                          'border:1px solid #1e3a5f;display:block;">' +
+              '</a>'
+            : '';
+
           var primaryHtml = primary.firstName
-            ? '<p style="color:#f1f5f9;font-size:14px;margin-bottom:3px;"><strong>' +
-                esc(primary.firstName) + ' ' + esc(primary.lastName) + '</strong></p>' +
-              '<p style="color:#94a3b8;font-size:13px;margin-bottom:2px;">\uD83D\uDCE7 ' + esc(primary.email) + '</p>' +
-              '<p style="color:#94a3b8;font-size:13px;margin-bottom:2px;">\uD83D\uDCCD ' +
-                esc(primary.state) + ' &nbsp;&middot;&nbsp; \uD83C\uDF81 ' + esc(primary.reward) + '</p>' +
-              (primary.notes ? '<p style="color:#64748b;font-size:12px;margin-bottom:2px;">\uD83D\uDCDD ' + esc(primary.notes) + '</p>' : '') +
-              '<p style="color:#1e293b;font-size:11px;margin-top:4px;">' +
-                (primary.timestamp ? new Date(primary.timestamp).toLocaleString() : '') + '</p>'
+            ? '<div style="display:flex;gap:12px;align-items:flex-start;">' +
+                photoThumb +
+                '<div>' +
+                  '<p style="color:#f1f5f9;font-size:14px;margin-bottom:3px;"><strong>' +
+                    esc(primary.firstName) + ' ' + esc(primary.lastName) + '</strong></p>' +
+                  '<p style="color:#94a3b8;font-size:13px;margin-bottom:2px;">\uD83D\uDCE7 ' + esc(primary.email) + '</p>' +
+                  '<p style="color:#94a3b8;font-size:13px;margin-bottom:2px;">\uD83D\uDCCD ' +
+                    esc(primary.state) + ' &nbsp;&middot;&nbsp; \uD83C\uDF81 ' + esc(primary.reward) + '</p>' +
+                  (primary.notes ? '<p style="color:#64748b;font-size:12px;margin-bottom:2px;">\uD83D\uDCDD ' + esc(primary.notes) + '</p>' : '') +
+                  '<p style="color:#1e293b;font-size:11px;margin-top:4px;">' +
+                    (primary.timestamp ? new Date(primary.timestamp).toLocaleString() : '') + '</p>' +
+                '</div>' +
+              '</div>'
             : '<p style="color:#334155;font-size:13px;">No primary data on record.</p>';
 
           var waitlistHtml = '';
@@ -1174,6 +1355,150 @@
         content.innerHTML = '<p style="color:#fca5a5;">Error loading queue: ' + esc(err.message) + '</p>';
       }
     }
+
+    // ── Agency Photo Manager ───────────────────────────────────────────────────
+
+    window.adminUploadPhoto = async function (key, name) {
+      var input = document.createElement('input');
+      input.type   = 'file';
+      input.accept = 'image/jpeg,image/png,image/webp';
+      input.onchange = async function () {
+        var file = input.files[0];
+        if (!file) return;
+        var btn = document.getElementById('photoBtn_' + key);
+        if (btn) { btn.textContent = 'Uploading…'; btn.disabled = true; }
+        try {
+          var url = await uploadToStorage(file, 'patch-photos/inventory/' + key);
+          await set(ref(db, 'agencyPhotos/' + key), url);
+          // refresh inventory card on-page
+          document.querySelectorAll('.patch-card').forEach(function (card) {
+            var cName    = (card.querySelector('.patch-name')?.textContent    || '').trim();
+            var cVariant = (card.querySelector('.patch-variant')?.textContent || '').trim();
+            var cKey     = sanitizeKey(cVariant ? cName + ' ' + cVariant : cName);
+            if (cKey === key) {
+              var old = card.querySelector('.patch-photo');
+              if (old) old.remove();
+              var img = document.createElement('img');
+              img.src = url; img.alt = name;
+              img.className = 'patch-photo'; img.loading = 'lazy';
+              card.appendChild(img);
+            }
+          });
+          // re-render photo manager to show updated thumbnail
+          renderPhotoManager();
+        } catch (err) {
+          alert('Upload failed: ' + err.message);
+          if (btn) { btn.textContent = 'Upload Photo'; btn.disabled = false; }
+        }
+      };
+      input.click();
+    };
+
+    window.renderPhotoManager = async function () {
+      renderPhotoManager();
+    };
+
+    async function renderPhotoManager() {
+      // highlight active tab
+      var qTab = document.getElementById('adminTabQueue');
+      var pTab = document.getElementById('adminTabPhotos');
+      if (qTab) Object.assign(qTab.style, { background:'transparent', color:'#64748b', borderColor:'#1e293b' });
+      if (pTab) Object.assign(pTab.style, { background:'#c9a84c22', color:'#c9a84c', borderColor:'#c9a84c55' });
+
+      var content = document.getElementById('adminContent');
+      if (!content) return;
+      content.innerHTML = '<p style="color:#334155;">Loading agency photos\u2026</p>';
+
+      try {
+        // Gather all agencies from on-page inventory cards
+        var cards = document.querySelectorAll('.patch-card');
+        var agencies = [];
+        cards.forEach(function (card) {
+          var name    = (card.querySelector('.patch-name')?.textContent    || '').trim();
+          var variant = (card.querySelector('.patch-variant')?.textContent || '').trim();
+          if (!name) return;
+          var label   = variant ? name + ' (' + variant + ')' : name;
+          var key     = sanitizeKey(variant ? name + ' ' + variant : name);
+          agencies.push({ key: key, label: label });
+        });
+
+        // Remove duplicates by key
+        var seen = {};
+        agencies = agencies.filter(function (a) {
+          if (seen[a.key]) return false;
+          seen[a.key] = true;
+          return true;
+        });
+
+        // Load existing photos from Firebase
+        var photoSnap = await get(ref(db, 'agencyPhotos'));
+        var photos    = photoSnap.exists() ? photoSnap.val() : {};
+
+        // Search filter
+        var searchId = 'photoSearch_' + Date.now();
+        var html =
+          '<p style="color:#475569;font-size:13px;margin-bottom:16px;">' +
+            agencies.length + ' agenc' + (agencies.length === 1 ? 'y' : 'ies') + ' in inventory</p>' +
+          '<input id="' + searchId + '" type="text" placeholder="Filter agencies\u2026"' +
+            ' oninput="(function(){' +
+              'var term=document.getElementById(\'' + searchId + '\').value.toLowerCase();' +
+              'document.querySelectorAll(\'.pmRow\').forEach(function(r){' +
+                'r.style.display=r.dataset.label.toLowerCase().includes(term)?\'\':\' none\';' +
+              '})' +
+            '})()"' +
+            ' style="width:100%;box-sizing:border-box;background:#0f172a;color:#f2ede6;' +
+                    'border:1px solid #1e293b;border-radius:5px;padding:9px 12px;' +
+                    'font-size:14px;margin-bottom:18px;">' +
+          '<div>';
+
+        agencies.forEach(function (a) {
+          var imgHtml = photos[a.key]
+            ? '<img src="' + esc(photos[a.key]) + '" alt="' + esc(a.label) + '"' +
+                ' style="width:64px;height:64px;object-fit:cover;border-radius:4px;' +
+                        'border:1px solid #1e3a5f;flex-shrink:0;">'
+            : '<div style="width:64px;height:64px;border-radius:4px;border:1px dashed #334155;' +
+                          'flex-shrink:0;display:flex;align-items:center;justify-content:center;' +
+                          'color:#334155;font-size:10px;text-align:center;line-height:1.3;">NO<br>PHOTO</div>';
+
+          html +=
+            '<div class="pmRow" data-label="' + esc(a.label) + '"' +
+              ' style="display:flex;align-items:center;gap:14px;' +
+                      'background:#0f172a;border:1px solid #1e293b;border-radius:7px;' +
+                      'padding:12px 14px;margin-bottom:10px;">' +
+              imgHtml +
+              '<div style="flex:1;min-width:0;">' +
+                '<p style="color:#f1f5f9;font-size:14px;margin-bottom:6px;' +
+                          'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+                  esc(a.label) +
+                '</p>' +
+                '<button id="photoBtn_' + esc(a.key) + '"' +
+                  ' onclick="adminUploadPhoto(\'' + esc(a.key) + '\',\'' + esc(a.label) + '\')"' +
+                  ' style="background:#1e3a5f;color:#93c5fd;border:1px solid #1e40af;' +
+                          'padding:6px 14px;border-radius:4px;cursor:pointer;' +
+                          'font-size:12px;font-weight:600;">' +
+                  (photos[a.key] ? '\uD83D\uDD04 Replace Photo' : '\uD83D\uDCF7 Upload Photo') +
+                '</button>' +
+              '</div>' +
+            '</div>';
+        });
+
+        html += '</div>';
+        content.innerHTML = html;
+
+      } catch (err) {
+        content.innerHTML = '<p style="color:#fca5a5;">Error: ' + esc(err.message) + '</p>';
+      }
+    }
+
+    // Re-highlight queue tab as active on initial render
+    var _origRenderAdmin = renderAdminData;
+    renderAdminData = async function () {
+      var qTab = document.getElementById('adminTabQueue');
+      var pTab = document.getElementById('adminTabPhotos');
+      if (qTab) Object.assign(qTab.style, { background:'#c9a84c22', color:'#c9a84c', borderColor:'#c9a84c55' });
+      if (pTab) Object.assign(pTab.style, { background:'transparent', color:'#64748b', borderColor:'#1e293b' });
+      return _origRenderAdmin();
+    };
 
   </script>
 </body>
