@@ -646,7 +646,7 @@
     </div>
   </section>
 
-  <section class="contact-section" id="formSection">
+  <section class="contact-section" id="formSection" style="display:none;">
     <div class="contact-inner">
       <div class="section-label">GET STARTED</div>
       <h2 style="font-family:'Impact', 'Arial Narrow',sans-serif;font-size:36px;color:#fff;letter-spacing:1px;margin-bottom:18px;">Submit Your Exchange</h2>
@@ -999,6 +999,7 @@
         document.getElementById('agencyInput').value = search;
         window.checkAgency();
       }
+      document.getElementById('formSection').style.display = '';
       document.getElementById('formSection').scrollIntoView({ behavior: 'smooth' });
       setTimeout(function () { document.getElementById('agencyInput').focus(); }, 650);
     };
