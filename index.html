@@ -512,7 +512,8 @@
       <div class="badge">MICROPATCHES</div>
       <h1>PATCH<br><span>EXCHANGE</span></h1>
       <div class="divider"></div>
-      <p class="tagline">Trade your agency patch for a custom keychain or magnet — 1 for 1.</p>
+      <p class="tagline">Trade your patch for a custom keychain or magnet — 1 for 1.</p>
+      <p class="tagline" style="font-size:13px;margin-top:6px;opacity:0.7;">Law Enforcement &nbsp;·&nbsp; Military &nbsp;·&nbsp; EMS &nbsp;·&nbsp; Fire</p>
     </div>
   </header>
 
@@ -524,7 +525,7 @@
         <div class="step-num">01</div>
         <div class="step-content">
           <h3>Search Our Lineup</h3>
-          <p>Type your agency in the search below. If we <strong>don't already have your patch</strong>, you're eligible for the exchange.</p>
+          <p>Type your agency, unit, or department in the search below. If we <strong>don't already have your patch</strong>, you're eligible for the exchange.</p>
         </div>
       </div>
       <div class="step fade-up">
@@ -538,7 +539,7 @@
         <div class="step-num">03</div>
         <div class="step-content">
           <h3>Send Your Patch</h3>
-          <p>After we confirm eligibility via email, mail us your agency patch. <strong>You only cover shipping to us</strong> — we'll cover shipping your keychain or magnet back to you. We finalize the exchange once the patch is in hand.</p>
+          <p>After we confirm eligibility via email, mail us your patch. <strong>You only cover shipping to us</strong> — we'll cover shipping your keychain or magnet back to you. We finalize the exchange once the patch is in hand.</p>
         </div>
       </div>
       <div class="step fade-up">
@@ -575,9 +576,10 @@
     <div class="patches-inner">
       <div class="section-label">CURRENT INVENTORY</div>
       <h2 style="font-family:'Impact', 'Arial Narrow',sans-serif;font-size:36px;color:var(--navy);letter-spacing:1px;margin-bottom:6px;">Patches We Have</h2>
-      <p style="font-size:14px;color:#5a5a5a;margin-bottom:24px;">If your agency is <strong>not listed below</strong>, you're eligible to participate.</p>
+      <p style="font-size:14px;color:#5a5a5a;margin-bottom:4px;">If your agency, unit, or department is <strong>not listed below</strong>, you're eligible to participate.</p>
+      <p style="font-size:13px;color:#8a8278;margin-bottom:24px;">We accept patches from <strong>law enforcement</strong>, <strong>military</strong>, <strong>EMS</strong> (including AMR and private services), and <strong>fire departments</strong>.</p>
 
-      <input type="text" class="patch-search" placeholder="Search your agency or state..." id="searchInput" oninput="filterPatches()">
+      <input type="text" class="patch-search" placeholder="Search agency, unit, or department..." id="searchInput" oninput="filterPatches()">
 
       <div class="patch-category" id="cat-le">
         <h3>Law Enforcement</h3>
@@ -631,7 +633,7 @@
       <div id="luckyDay">
         <div class="lucky-emoji">&#x1F389;</div>
         <h3>It's Your Lucky Day!</h3>
-        <p id="luckyMsg">We don't have your patch yet — which means you're eligible for the exchange. Claim your spot now and get a custom keychain or magnet of your agency's patch.</p>
+        <p id="luckyMsg">We don't have your patch yet — which means you're eligible for the exchange. Whether you're law enforcement, military, EMS, or fire, claim your spot now and get a custom keychain or magnet of your patch.</p>
         <div id="queueBadge" class="queue-badge open">
           <span class="queue-dot"></span>
           <span id="queueBadgeText">Spot Open — Be the First!</span>
@@ -671,8 +673,8 @@
         </div>
 
         <div class="form-group">
-          <label>Agency / Department Name</label>
-          <input type="text" id="agencyInput" name="agency" placeholder="e.g. Mesa Police Department" required oninput="checkAgency()">
+          <label>Agency / Unit / Department</label>
+          <input type="text" id="agencyInput" name="agency" placeholder="e.g. Mesa PD, AMR Phoenix, 82nd Airborne, Phoenix Fire Dept" required oninput="checkAgency()">
         </div>
 
         <div class="form-group">
