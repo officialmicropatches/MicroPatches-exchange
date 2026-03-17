@@ -601,6 +601,131 @@
     }
 
     /* ============================================================
+       ABOUT BUTTON (top)
+       ============================================================ */
+    .about-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      width: 100%;
+      padding: 11px 16px;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      transition: color var(--t), border-color var(--t), background var(--t), transform var(--t);
+      margin-top: 10px;
+    }
+    .about-btn:hover {
+      color: var(--gold);
+      border-color: var(--gold-border);
+      background: var(--gold-faint);
+      transform: translateY(-1px);
+    }
+    .about-btn-arrow {
+      font-size: 13px;
+      transition: transform var(--t);
+    }
+    .about-btn:hover .about-btn-arrow { transform: translateY(2px); }
+
+    /* ============================================================
+       SECTION 10 — ABOUT
+       ============================================================ */
+    .about-section {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .about-header {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .about-title {
+      font-family: var(--font-head);
+      font-size: 30px;
+      letter-spacing: 0.07em;
+      color: var(--text);
+      line-height: 1.05;
+      margin-top: 4px;
+    }
+
+    .about-body {
+      padding: 18px 20px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .about-p {
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.72;
+    }
+
+    .about-p strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .about-p .gold { color: var(--gold); font-weight: 600; }
+
+    .about-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 2px 0;
+    }
+
+    .about-partnership {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: var(--gold-faint);
+      border: 1px solid var(--gold-border);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+
+    .about-partnership-badge {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      color: var(--gold);
+      background: rgba(201, 168, 76, 0.12);
+      border: 1px solid var(--gold-border);
+      border-radius: 2px;
+      padding: 3px 7px;
+      white-space: nowrap;
+      margin-top: 1px;
+      flex-shrink: 0;
+    }
+
+    .about-partnership-text {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .about-closing {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+      text-align: center;
+      font-style: italic;
+      padding-top: 4px;
+    }
+
+    /* ============================================================
        SECTION 9 — FOOTER
        ============================================================ */
     .footer {
@@ -665,6 +790,14 @@
   </header>
 
   <div class="divider"></div>
+
+  <!-- Learn More button — scrolls to About section -->
+  <div class="section anim" style="padding-top: 16px; padding-bottom: 4px;">
+    <a href="#about" class="about-btn">
+      Who We Are &amp; What We Do
+      <span class="about-btn-arrow">&#8595;</span>
+    </a>
+  </div>
 
   <!-- ============================================================
        SECTION 2 — SHOP BUTTON
@@ -917,6 +1050,76 @@
         Our long term goal is to donate a portion of all proceeds to the
         families of fallen officers, veterans, and first responders.
       </p>
+    </div>
+    <div class="accent-bar"></div>
+  </div>
+
+  <!-- ============================================================
+       SECTION 10 — ABOUT
+       ============================================================ -->
+  <div class="section anim" id="about">
+    <div class="about-section">
+
+      <div class="about-header">
+        <div class="label">About MicroPatches</div>
+        <div class="about-title">Who We Are</div>
+      </div>
+
+      <div class="about-body">
+
+        <p class="about-p">
+          MicroPatches is a new small business based out of
+          <strong>Phoenix, Arizona</strong>, founded by an
+          <strong>active duty law enforcement officer</strong> and
+          <strong>United States Army National Guard veteran</strong>.
+        </p>
+
+        <p class="about-p">
+          We specialize in <span class="gold">3D printed scaled down versions of real patches</span>,
+          producing keychains, magnets, and croc charms for law enforcement, military,
+          fire, EMS, and custom designs. Everything we make is
+          <strong>USA made</strong>, with <strong>no minimum orders</strong>,
+          so no agency or unit gets left out regardless of size.
+        </p>
+
+        <div class="about-divider"></div>
+
+        <p class="about-p">
+          Our <strong>free patch queue</strong> allows anyone to submit their agency or
+          unit and we will design and print it at no charge. You just pay for the
+          keychain at cost when it is ready. Custom orders are handled separately,
+          take priority, and are priced accordingly with a minimum design fee to
+          keep the queue fair for everyone.
+        </p>
+
+        <p class="about-p">
+          We also run a <strong>patch exchange program</strong>. Send us your patch
+          and when your agency comes up in the queue, one of your keychains is on
+          us. You just cover shipping.
+        </p>
+
+        <div class="about-divider"></div>
+
+        <p class="about-p">
+          Our <span class="gold">long term mission</span> is to donate a portion of
+          all sales to the families of fallen first responders and military veterans.
+        </p>
+
+        <div class="about-partnership">
+          <div class="about-partnership-badge">Partner</div>
+          <div class="about-partnership-text">
+            We are proud to be partnered with the <strong style="color: var(--text);">Pink Patch Project</strong>,
+            a nationwide initiative raising awareness and funds for breast cancer
+            research through law enforcement. We are actively seeking more
+            partnerships that align with that mission.
+          </div>
+        </div>
+
+        <p class="about-closing">
+          We are just getting started, but we are building something we believe in.
+        </p>
+
+      </div>
     </div>
     <div class="accent-bar"></div>
   </div>
