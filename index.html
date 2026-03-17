@@ -683,12 +683,9 @@
       Keychains $12.99 &nbsp;&middot;&nbsp; Magnets $12.99 &nbsp;&middot;&nbsp; Croc Charms $7.99<br>
       No Minimum Orders. Ever.
     </div>
-    <a
-      href="mailto:OfficialMicroPatches@gmail.com?subject=Custom%20Order%20Request"
-      class="custom-btn"
-    >
+    <button class="custom-btn" onclick="openEmailModal()">
       CUSTOM ORDER &nbsp;&#8599;
-    </a>
+    </button>
     <div class="accent-bar"></div>
   </div>
 
@@ -1050,6 +1047,34 @@ document.querySelectorAll(".anim").forEach((el, i) => {
   el.style.transitionDelay = `${i * 0.07}s`;
   observer.observe(el);
 });
+/* ── Email modal ──────────────────────────────────────────── */
+function openEmailModal() {
+  document.getElementById("email-modal").style.display = "flex";
+}
+function closeEmailModal() {
+  document.getElementById("email-modal").style.display = "none";
+}
+function copyEmail() {
+  navigator.clipboard.writeText("OfficialMicroPatches@gmail.com").then(() => {
+    const btn = document.getElementById("copy-btn");
+    btn.textContent = "Copied!";
+    setTimeout(() => { btn.textContent = "Copy"; }, 2000);
+  });
+}
 </script>
+
+<!-- EMAIL MODAL -->
+<div id="email-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:999; align-items:center; justify-content:center; padding:24px;">
+  <div style="background:#111; border:1px solid rgba(201,168,76,0.3); border-radius:8px; padding:28px 24px; max-width:340px; width:100%; text-align:center;">
+    <div style="font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:0.1em; color:#E8E8E8; margin-bottom:6px;">Custom Order</div>
+    <div style="font-family:'Share Tech Mono',monospace; font-size:11px; color:#888; letter-spacing:0.08em; margin-bottom:20px;">Send us an email to get started</div>
+    <div style="background:#181818; border:1px solid rgba(201,168,76,0.2); border-radius:4px; padding:14px 12px; font-family:'Share Tech Mono',monospace; font-size:13px; color:#C9A84C; letter-spacing:0.04em; margin-bottom:16px; word-break:break-all;">OfficialMicroPatches@gmail.com</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+      <button id="copy-btn" onclick="copyEmail()" style="padding:11px; background:#C9A84C; color:#080808; border:none; border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:12px; letter-spacing:0.08em; cursor:pointer;">Copy</button>
+      <button onclick="closeEmailModal()" style="padding:11px; background:transparent; color:#888; border:1px solid rgba(255,255,255,0.1); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:12px; letter-spacing:0.08em; cursor:pointer;">Close</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
