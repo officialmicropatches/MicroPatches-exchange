@@ -1422,18 +1422,31 @@
 <script>
 /* =============================================================
    QUEUE DATA
-   Update this array to change what appears in the queue panel.
+   Edit this default array OR manage visually at /admin.html.
+   The admin panel saves changes to localStorage (this browser),
+   which overrides the defaults below for you automatically.
+   To make changes permanent for ALL visitors, paste the
+   exported array from admin.html back here.
    Fields:
      name   — Department or agency name (string)
      status — "queued" | "in-progress" | "complete"
    ============================================================= */
-const QUEUE = [
+const DEFAULT_QUEUE = [
   { name: "Orange County Sheriff's Office",  status: "queued" },
   { name: "Davie County Sheriff's Office",   status: "queued" },
   { name: "North Carolina Highway Patrol",   status: "queued" },
   { name: "Globe Arizona PD",                status: "queued" },
   { name: "18th Airborne Corps",             status: "queued" },
 ];
+
+/* Load from localStorage (set by admin panel) or fall back to defaults */
+const QUEUE = (function() {
+  try {
+    const saved = localStorage.getItem("mp_queue");
+    if (saved) return JSON.parse(saved);
+  } catch(e) {}
+  return DEFAULT_QUEUE;
+})();
 
 /* How many entries to show before the "+ X more" line */
 const QUEUE_VISIBLE = 4;
