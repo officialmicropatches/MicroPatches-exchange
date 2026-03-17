@@ -764,6 +764,290 @@
       color: var(--text);
       line-height: 1.05;
     }
+
+    /* ============================================================
+       PATCH SUBMISSION MODAL
+       ============================================================ */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.90);
+      z-index: 1000;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 16px;
+      overflow-y: auto;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal-box {
+      background: #0e0e0e;
+      border: 1px solid rgba(201, 168, 76, 0.32);
+      border-radius: 10px;
+      width: 100%;
+      max-width: 430px;
+      margin: auto;
+      position: relative;
+    }
+
+    .modal-header {
+      padding: 22px 20px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .modal-title {
+      font-family: var(--font-head);
+      font-size: 30px;
+      letter-spacing: 0.1em;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .modal-subtitle {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 0.07em;
+      margin-top: 6px;
+      line-height: 1.55;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      width: 30px;
+      height: 30px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: color var(--t), border-color var(--t);
+    }
+    .modal-close:hover { color: var(--text); border-color: rgba(255,255,255,0.22); }
+
+    .modal-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .form-label {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+    .form-label .req { color: #7ec8e3; margin-left: 2px; }
+    .form-label .opt { color: var(--text-dim); font-size: 8.5px; margin-left: 3px; }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+      background: #080808;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 13px;
+      padding: 10px 12px;
+      transition: border-color var(--t);
+      width: 100%;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus { border-color: rgba(201, 168, 76, 0.5); }
+    .form-input::placeholder,
+    .form-textarea::placeholder { color: #3a3a3a; }
+    .form-textarea { resize: vertical; min-height: 90px; line-height: 1.55; }
+    .form-select { cursor: pointer; }
+    .form-select option { background: #111; }
+
+    /* Photo upload */
+    .photo-zone {
+      border: 1px dashed rgba(201, 168, 76, 0.38);
+      border-radius: var(--radius-lg);
+      background: rgba(201, 168, 76, 0.03);
+      padding: 18px 14px 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color var(--t), background var(--t);
+      position: relative;
+    }
+    .photo-zone:hover {
+      border-color: rgba(201, 168, 76, 0.65);
+      background: rgba(201, 168, 76, 0.06);
+    }
+    .photo-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .photo-encouraged {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: var(--gold);
+      background: rgba(201, 168, 76, 0.10);
+      border: 1px solid var(--gold-border);
+      border-radius: 2px;
+      padding: 3px 9px;
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+
+    .photo-icon { font-size: 24px; margin-bottom: 6px; }
+
+    .photo-main-text {
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--text);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .photo-sub-text {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 6px;
+    }
+
+    .photo-hint {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+      line-height: 1.5;
+    }
+
+    .photo-selected {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--gold);
+      margin-top: 8px;
+      word-break: break-all;
+    }
+
+    /* Submit */
+    .form-submit {
+      width: 100%;
+      padding: 15px;
+      background: var(--gold);
+      color: #060606;
+      border: none;
+      border-radius: var(--radius);
+      font-family: var(--font-head);
+      font-size: 22px;
+      letter-spacing: 0.15em;
+      cursor: pointer;
+      transition: background var(--t), transform var(--t);
+      margin-top: 2px;
+    }
+    .form-submit:hover  { background: var(--gold-bright); transform: translateY(-1px); }
+    .form-submit:active { transform: translateY(0); }
+    .form-submit:disabled { background: #3a2e0e; color: #666; cursor: not-allowed; transform: none; }
+
+    .form-footer-note {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .form-req-note {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+    }
+    .form-req-note span { color: #7ec8e3; }
+
+    /* Success screen */
+    .modal-success {
+      display: none;
+      padding: 36px 24px 32px;
+      text-align: center;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .modal-success.visible { display: flex; }
+
+    .success-check {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 2px solid var(--green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: var(--green);
+      margin-bottom: 4px;
+    }
+
+    .success-title {
+      font-family: var(--font-head);
+      font-size: 30px;
+      letter-spacing: 0.1em;
+      color: var(--green);
+    }
+
+    .success-text {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      line-height: 1.7;
+    }
+
+    .success-close {
+      margin-top: 8px;
+      padding: 12px 28px;
+      background: transparent;
+      border: 1px solid var(--gold-border);
+      color: var(--gold);
+      border-radius: var(--radius);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: background var(--t);
+    }
+    .success-close:hover { background: var(--gold-faint); }
   </style>
 </head>
 
@@ -848,12 +1132,10 @@
           class="q-btn q-btn-outline"
           onclick="toggleQueue()"
         >View Full Queue</button>
-        <a
-          href="https://www.instagram.com/micropatches"
+        <button
           class="q-btn q-btn-fill"
-          target="_blank"
-          rel="noopener noreferrer"
-        >Submit Your Patch</a>
+          onclick="openPatchModal()"
+        >Submit Your Patch</button>
       </div>
 
       <p class="queue-note">
@@ -1250,6 +1532,107 @@ document.querySelectorAll(".anim").forEach((el, i) => {
   el.style.transitionDelay = `${i * 0.07}s`;
   observer.observe(el);
 });
+/* ── Patch submission modal ───────────────────────────────── */
+function openPatchModal() {
+  document.getElementById("patch-modal").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closePatchModal() {
+  const modal = document.getElementById("patch-modal");
+  modal.classList.remove("open");
+  document.body.style.overflow = "";
+  // Reset form and state
+  document.getElementById("patch-form").reset();
+  document.getElementById("patch-form").style.display = "";
+  document.getElementById("photo-name").textContent = "";
+  document.getElementById("patch-success").classList.remove("visible");
+  const btn = document.getElementById("patch-submit-btn");
+  btn.disabled = false;
+  btn.textContent = "SUBMIT PATCH \u2192";
+  btn.style.background = "";
+  btn.style.color = "";
+}
+
+function onPhotoSelected(input) {
+  const nameEl = document.getElementById("photo-name");
+  nameEl.textContent = (input.files && input.files[0])
+    ? "\u2713 " + input.files[0].name
+    : "";
+}
+
+// Close modal on backdrop click
+document.getElementById("patch-modal").addEventListener("click", function(e) {
+  if (e.target === this) closePatchModal();
+});
+
+// Close modal on Escape key
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Escape") {
+    const modal = document.getElementById("patch-modal");
+    if (modal.classList.contains("open")) closePatchModal();
+  }
+});
+
+// Form submission via FormSubmit.co AJAX
+document.getElementById("patch-form").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  const form = e.target;
+  const btn  = document.getElementById("patch-submit-btn");
+
+  const first = form["First Name"].value.trim();
+  const last  = form["Last Name"].value.trim();
+  const email = form.email.value.trim();
+  const type  = form["Patch Type"].value;
+  const desc  = form["Patch Description"].value.trim();
+
+  if (!first || !last || !email || !type || !desc) {
+    btn.textContent = "Fill in all required fields";
+    btn.style.background = "#5a1a1a";
+    btn.style.color = "#ffaaaa";
+    setTimeout(() => {
+      btn.textContent = "SUBMIT PATCH \u2192";
+      btn.style.background = "";
+      btn.style.color = "";
+    }, 2800);
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Submitting\u2026";
+
+  const formData = new FormData(form);
+  formData.append("_subject", "New Patch Submission: " + first + " " + last + " \u2014 " + type);
+  formData.append("_template", "box");
+  formData.append("_captcha", "false");
+
+  try {
+    const res  = await fetch("https://formsubmit.co/ajax/OfficialMicroPatches@gmail.com", {
+      method:  "POST",
+      headers: { "Accept": "application/json" },
+      body:    formData,
+    });
+    const data = await res.json();
+
+    if (data.success === "true" || data.success === true) {
+      form.style.display = "none";
+      document.getElementById("patch-success").classList.add("visible");
+    } else {
+      throw new Error("rejected");
+    }
+  } catch {
+    btn.disabled = false;
+    btn.textContent = "Something went wrong \u2014 try again";
+    btn.style.background = "#5a1a1a";
+    btn.style.color = "#ffaaaa";
+    setTimeout(() => {
+      btn.textContent = "SUBMIT PATCH \u2192";
+      btn.style.background = "";
+      btn.style.color = "";
+    }, 3500);
+  }
+});
+
 /* ── Email modal ──────────────────────────────────────────── */
 function openEmailModal() {
   document.getElementById("email-modal").style.display = "flex";
@@ -1265,6 +1648,116 @@ function copyEmail() {
   });
 }
 </script>
+
+<!-- PATCH SUBMISSION MODAL -->
+<div id="patch-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="patch-modal-title">
+  <div class="modal-box">
+
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="patch-modal-title">Submit Your Patch</div>
+        <div class="modal-subtitle">
+          Free to design &amp; build &mdash; you just pay product cost when it's done.<br>
+          Standard queue. Custom orders jump the line.
+        </div>
+      </div>
+      <button class="modal-close" onclick="closePatchModal()" aria-label="Close">&#10005;</button>
+    </div>
+
+    <form id="patch-form" class="modal-body" novalidate>
+
+      <div class="form-req-note"><span>*</span> Required fields</div>
+
+      <!-- Name row -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="p-first">First Name <span class="req">*</span></label>
+          <input class="form-input" id="p-first" name="First Name" type="text" placeholder="John" required autocomplete="given-name">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="p-last">Last Name <span class="req">*</span></label>
+          <input class="form-input" id="p-last" name="Last Name" type="text" placeholder="Smith" required autocomplete="family-name">
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label class="form-label" for="p-email">Email <span class="req">*</span></label>
+        <input class="form-input" id="p-email" name="email" type="email" placeholder="you@example.com" required autocomplete="email">
+      </div>
+
+      <!-- Phone -->
+      <div class="form-group">
+        <label class="form-label" for="p-phone">Contact Number <span class="opt">(optional)</span></label>
+        <input class="form-input" id="p-phone" name="Contact Number" type="tel" placeholder="(555) 555-5555" autocomplete="tel">
+      </div>
+
+      <!-- Agency -->
+      <div class="form-group">
+        <label class="form-label" for="p-agency">Agency / Department / Unit <span class="opt">(optional)</span></label>
+        <input class="form-input" id="p-agency" name="Agency / Department / Unit" type="text" placeholder="e.g. Phoenix PD, 101st Airborne, Ladder Co. 7">
+      </div>
+
+      <!-- Patch type -->
+      <div class="form-group">
+        <label class="form-label" for="p-type">Patch Type <span class="req">*</span></label>
+        <select class="form-select" id="p-type" name="Patch Type" required>
+          <option value="" disabled selected>Select a type&hellip;</option>
+          <option value="Current Agency / Active Duty">Current Agency / Active Duty</option>
+          <option value="Retired / Former Agency">Retired / Former Agency</option>
+          <option value="Vintage Patch">Vintage Patch</option>
+          <option value="Specialty / Commemorative">Specialty / Commemorative</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <!-- Description -->
+      <div class="form-group">
+        <label class="form-label" for="p-desc">Patch Description <span class="req">*</span></label>
+        <textarea class="form-textarea" id="p-desc" name="Patch Description" placeholder="Describe the patch — agency name, design details, colors, shape, any special meaning or history. The more detail the better." required></textarea>
+      </div>
+
+      <!-- Photo upload -->
+      <div class="form-group">
+        <label class="form-label">Patch Photo <span class="opt">(not required)</span></label>
+        <div class="photo-zone" id="photo-zone">
+          <input type="file" id="p-photo" name="attachment" accept="image/*" onchange="onPhotoSelected(this)">
+          <div class="photo-encouraged">&#9650;&nbsp; Highly Encouraged</div>
+          <div class="photo-icon">&#128247;</div>
+          <div class="photo-main-text">Upload a photo of your patch</div>
+          <div class="photo-sub-text">Well-lit &nbsp;&middot;&nbsp; Top-down &nbsp;&middot;&nbsp; Flat on a surface</div>
+          <div class="photo-hint">
+            Submitting a clear photo means we can start printing<br>
+            immediately when your spot in the queue arrives.
+          </div>
+          <div class="photo-selected" id="photo-name"></div>
+        </div>
+      </div>
+
+      <button type="submit" class="form-submit" id="patch-submit-btn">SUBMIT PATCH &nbsp;&#8594;</button>
+
+      <div class="form-footer-note">
+        Your info goes straight to us. We will reach out when we start on your patch.<br>
+        Want priority? Custom orders jump the line &mdash; DM us on Instagram or TikTok.
+      </div>
+
+    </form>
+
+    <!-- Success screen (shown after submit) -->
+    <div class="modal-success" id="patch-success">
+      <div class="success-check">&#10003;</div>
+      <div class="success-title">Submission Received!</div>
+      <div class="success-text">
+        We have your patch info and will reach out<br>
+        when your turn comes up in the queue.<br><br>
+        Follow us on Instagram &amp; TikTok<br>
+        for live queue updates and progress posts.
+      </div>
+      <button class="success-close" onclick="closePatchModal()">Close</button>
+    </div>
+
+  </div>
+</div>
 
 <!-- EMAIL MODAL -->
 <div id="email-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:999; align-items:center; justify-content:center; padding:24px;">
