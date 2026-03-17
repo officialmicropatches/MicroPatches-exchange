@@ -1564,7 +1564,8 @@ async function handleSubmitForm(e) {
   const form = document.getElementById("submit-form");
   btn.disabled    = true;
   btn.textContent = "Sending...";
-  const data = new FormData(form);
+  const data      = new FormData(form);
+  const photoFile = form.querySelector("input[type=file]").files[0] || null;
   try {
     const res = await fetch("https://formsubmit.co/ajax/OfficialMicroPatches@gmail.com", {
       method: "POST",
@@ -1576,8 +1577,8 @@ async function handleSubmitForm(e) {
       document.getElementById("submit-success").classList.add("show");
       if (window.fbAddSubmission) {
         const sub = {};
-        data.forEach((v, k) => { if (!k.startsWith("_")) sub[k] = v; });
-        window.fbAddSubmission(sub);
+        data.forEach((v, k) => { if (!k.startsWith("_") && k !== "attachment") sub[k] = v; });
+        window.fbAddSubmission(sub, photoFile);
       }
     } else {
       throw new Error("bad response");
@@ -1947,6 +1948,7 @@ function copyEmail() {
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
   import { getFirestore, doc, getDoc, setDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-storage.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBJD5r0KmlqygWAa0rT17dWplXQQ96IeW4",
@@ -1959,7 +1961,8 @@ function copyEmail() {
   };
 
   const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  const db  = getFirestore(app);
+  const storage = getStorage(app);
 
   /* Load queue from Firestore on page load */
   (async () => {
@@ -1985,11 +1988,20 @@ function copyEmail() {
     }
   };
 
-  /* Store patch submission in Firestore */
-  window.fbAddSubmission = async function(data) {
+  /* Upload patch photo to Storage, then store submission in Firestore */
+  window.fbAddSubmission = async function(data, photoFile) {
     try {
+      let photoURL = null;
+      if (photoFile) {
+        const ext      = photoFile.name.split(".").pop();
+        const filename = `submissions/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const storageRef = ref(storage, filename);
+        await uploadBytes(storageRef, photoFile);
+        photoURL = await getDownloadURL(storageRef);
+      }
       await addDoc(collection(db, "submissions"), {
         ...data,
+        ...(photoURL ? { photoURL } : {}),
         submittedAt: serverTimestamp()
       });
     } catch (e) {
