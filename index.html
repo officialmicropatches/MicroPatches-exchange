@@ -1,1 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="MicroPatches — 3D Printed Patch Keychains for LEO, Fire, and Military. USA Made. No Minimum Orders. Phoenix, Arizona." />
+  <title>MicroPatches — 3D Printed Patch Keychains</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ============================================================
+       CSS VARIABLE SYSTEM — edit colors here, nowhere else
+       ============================================================ */
+    :root {
+      /* Backgrounds */
+      --bg:           #080808;
+      --bg-surface:   #101010;
+      --bg-surface-2: #161616;
+      --bg-overlay:   rgba(8, 8, 8, 0.6);
+
+      /* Gold palette */
+      --gold:         #C9A84C;
+      --gold-dim:     #8A6E2F;
+      --gold-bright:  #DDB85A;
+      --gold-faint:   rgba(201, 168, 76, 0.07);
+      --gold-border:  rgba(201, 168, 76, 0.22);
+      --gold-text:    #C9A84C;
+
+      /* Green palette (exchange program only) */
+      --green:        #4CAF7A;
+      --green-dim:    #2F6E4A;
+      --green-faint:  rgba(76, 175, 122, 0.07);
+      --green-border: rgba(76, 175, 122, 0.22);
+
+      /* Text */
+      --text:         #EBEBEB;
+      --text-muted:   #888;
+      --text-dim:     #444;
+
+      /* Borders */
+      --border:       rgba(255, 255, 255, 0.06);
+      --border-hover: rgba(255, 255, 255, 0.10);
+
+      /* Layout */
+      --max-w:        480px;
+      --pad:          16px;
+      --radius:       4px;
+      --radius-lg:    8px;
+
+      /* Typography */
+      --font-head:    'Bebas Neue', sans-serif;
+      --font-mono:    'Share Tech Mono', monospace;
+      --font-body:    'Inter', sans-serif;
+
+      /* Motion */
+      --ease:         cubic-bezier(0.22, 0.68, 0, 1.2);
+      --t:            0.22s ease;
+    }
+
+    /* ============================================================
+       RESET
+       ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+
+    /* ============================================================
+       BASE
+       ============================================================ */
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      overflow-x: hidden;
+      /* Subtle tactical grid */
+      background-image:
+        linear-gradient(rgba(201, 168, 76, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(201, 168, 76, 0.025) 1px, transparent 1px);
+      background-size: 36px 36px;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+
+    /* ============================================================
+       LAYOUT
+       ============================================================ */
+    .page {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 0 var(--pad) 56px;
+    }
+
+    .section { padding-top: 28px; }
+
+    /* ============================================================
+       ANIMATIONS
+       ============================================================ */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(22px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.35; transform: scale(0.8); }
+    }
+
+    .anim {
+      opacity: 0;
+      transform: translateY(22px);
+      transition: opacity 0.55s var(--ease), transform 0.55s var(--ease);
+    }
+    .anim.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ============================================================
+       REUSABLE ATOMS
+       ============================================================ */
+
+    /* Section label */
+    .label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 4px;
+    }
+    .label-green { color: var(--green); }
+
+    /* Accent bar */
+    .accent-bar {
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, var(--gold) 50%, transparent 100%);
+      margin-top: 28px;
+      opacity: 0.4;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Tag pill */
+    .tag {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 2px;
+    }
+    .tag-gold  { border: 1px solid var(--gold-border);  color: var(--gold);  background: var(--gold-faint); }
+    .tag-green { border: 1px solid var(--green-border); color: var(--green); background: var(--green-faint); }
+
+    .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+
+    /* Corner bracket decoration */
+    .bracket {
+      position: relative;
+      padding: 22px 20px;
+    }
+    .bracket::before, .bracket::after {
+      content: '';
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-color: var(--gold);
+      border-style: solid;
+      opacity: 0.55;
+    }
+    .bracket::before { top: 0;    left: 0;  border-width: 1px 0 0 1px; }
+    .bracket::after  { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
+
+    /* Surface card */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+    }
+    .card-body  { padding: 18px 18px 20px; }
+    .card-gold  { border-left: 3px solid var(--gold); }
+    .card-green { border-left: 3px solid var(--green); }
+
+    .card-title {
+      font-family: var(--font-head);
+      font-size: 26px;
+      letter-spacing: 0.05em;
+      color: var(--text);
+      line-height: 1.05;
+      margin-bottom: 10px;
+    }
+
+    .card-desc {
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    /* ============================================================
+       SECTION 1 — HEADER
+       ============================================================ */
+    .header {
+      padding: 44px 0 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-frame {
+      width: 108px;
+      height: 108px;
+      border-radius: 50%;
+      border: 1px solid var(--gold-border);
+      background: var(--bg-surface);
+      box-shadow: 0 0 28px rgba(201, 168, 76, 0.12), inset 0 0 12px rgba(0,0,0,0.4);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Fallback initials if image missing */
+    .logo-fallback {
+      font-family: var(--font-head);
+      font-size: 32px;
+      letter-spacing: 0.06em;
+      color: var(--gold);
+      display: none;
+    }
+
+    .brand-name {
+      font-family: var(--font-head);
+      font-size: 38px;
+      letter-spacing: 0.1em;
+      color: var(--text);
+      text-align: center;
+      margin-top: 2px;
+    }
+    .brand-name span { color: var(--gold); }
+
+    .tagline {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .handle-pill {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--gold-border);
+      border-radius: 100px;
+      padding: 4px 14px;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+    }
+
+    .live-clock {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+    }
+
+    /* ============================================================
+       SECTION 2 — SHOP BUTTON
+       ============================================================ */
+    .shop-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 18px 16px;
+      background: var(--gold);
+      color: #060606;
+      font-family: var(--font-head);
+      font-size: 24px;
+      letter-spacing: 0.18em;
+      border-radius: var(--radius);
+      transition: background var(--t), transform var(--t), box-shadow var(--t);
+      box-shadow: 0 2px 16px rgba(201, 168, 76, 0.18);
+      gap: 10px;
+    }
+    .shop-btn:hover  { background: var(--gold-bright); transform: translateY(-1px); box-shadow: 0 4px 24px rgba(201, 168, 76, 0.28); }
+    .shop-btn:active { transform: translateY(0); }
+
+    .shop-btn-arrow {
+      font-size: 20px;
+      line-height: 1;
+      margin-top: 1px;
+    }
+
+    .shop-sub {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      text-align: center;
+      margin-top: 9px;
+      letter-spacing: 0.07em;
+      line-height: 1.5;
+    }
+
+    /* ============================================================
+       SECTION 3 — QUEUE
+       ============================================================ */
+    .queue-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .queue-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .queue-title {
+      font-family: var(--font-head);
+      font-size: 19px;
+      letter-spacing: 0.07em;
+    }
+
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      color: var(--gold);
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--gold);
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+
+    .queue-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      transition: background var(--t);
+    }
+    .queue-row:last-child { border-bottom: none; }
+    .queue-row:hover { background: var(--bg-surface-2); }
+
+    .queue-num {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      min-width: 18px;
+    }
+
+    .queue-name {
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      flex: 1;
+    }
+
+    .q-badge {
+      font-family: var(--font-mono);
+      font-size: 8px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 2px;
+    }
+    .q-queued      { background: rgba(201,168,76,0.10); color: var(--gold);  border: 1px solid rgba(201,168,76,0.2); }
+    .q-in-progress { background: rgba(76,130,200,0.12); color: #7ec8e3;      border: 1px solid rgba(76,130,200,0.25); }
+    .q-complete    { background: rgba(76,175,122,0.10); color: var(--green); border: 1px solid rgba(76,175,122,0.2); }
+
+    .queue-more {
+      padding: 9px 16px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+      text-align: center;
+      border-top: 1px solid var(--border);
+    }
+
+    .queue-btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 12px 16px;
+    }
+
+    .q-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 8px;
+      border-radius: var(--radius);
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.05em;
+      text-align: center;
+      transition: all var(--t);
+      line-height: 1.3;
+    }
+    .q-btn-outline {
+      border: 1px solid var(--gold-border);
+      color: var(--gold);
+      background: transparent;
+    }
+    .q-btn-outline:hover { background: var(--gold-faint); }
+
+    .q-btn-fill {
+      border: 1px solid var(--gold);
+      background: var(--gold);
+      color: #060606;
+      font-weight: 700;
+    }
+    .q-btn-fill:hover { background: var(--gold-bright); }
+
+    .queue-note {
+      padding: 0 16px 14px;
+      font-family: var(--font-body);
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.55;
+      text-align: center;
+    }
+
+    /* ============================================================
+       SECTION 6 — PRICING GRID
+       ============================================================ */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .price-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .price-card-budget {
+      background: rgba(201, 168, 76, 0.05);
+      border-color: var(--gold-border);
+    }
+
+    .price-amount {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--gold);
+      margin-bottom: 2px;
+    }
+
+    .price-title {
+      font-family: var(--font-head);
+      font-size: 16px;
+      letter-spacing: 0.05em;
+      color: var(--text);
+      line-height: 1.1;
+    }
+
+    .price-desc {
+      font-family: var(--font-body);
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.55;
+      margin-top: 4px;
+    }
+
+    .pricing-note {
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-style: italic;
+      color: var(--text-dim);
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    /* ============================================================
+       SECTION 7 — SOCIAL GRID
+       ============================================================ */
+    .social-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .social-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      transition: border-color var(--t), background var(--t);
+    }
+    .social-card:hover {
+      border-color: var(--gold-border);
+      background: var(--bg-surface-2);
+    }
+
+    .social-abbr {
+      width: 30px;
+      height: 30px;
+      border: 1px solid var(--gold-border);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--gold);
+      flex-shrink: 0;
+    }
+
+    .social-platform {
+      font-family: var(--font-head);
+      font-size: 19px;
+      letter-spacing: 0.07em;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .social-handle {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      word-break: break-all;
+    }
+
+    /* ============================================================
+       SECTION 8 — MISSION
+       ============================================================ */
+    .mission-box {
+      border: 1px solid var(--gold-border);
+      border-radius: var(--radius-lg);
+      background: var(--gold-faint);
+    }
+
+    .mission-text {
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.75;
+    }
+
+    /* ============================================================
+       SECTION 9 — FOOTER
+       ============================================================ */
+    .footer {
+      padding: 36px 0 6px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .footer-brand {
+      font-family: var(--font-head);
+      font-size: 28px;
+      letter-spacing: 0.1em;
+      color: var(--text);
+    }
+    .footer-brand span { color: var(--gold); }
+
+    .footer-sub {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.14em;
+    }
+
+    /* ============================================================
+       SECTION HEADING (shared)
+       ============================================================ */
+    .section-head { margin-bottom: 12px; }
+
+    .section-h2 {
+      font-family: var(--font-head);
+      font-size: 28px;
+      letter-spacing: 0.06em;
+      color: var(--text);
+      line-height: 1.05;
+    }
+  </style>
+</head>
+
+<body>
+<div class="page">
+
+  <!-- ============================================================
+       SECTION 1 — HEADER
+       ============================================================ -->
+  <header class="header anim">
+    <div class="logo-frame">
+      <img
+        src="logo.png"
+        alt="MicroPatches Logo"
+        onerror="this.style.display='none'; document.querySelector('.logo-fallback').style.display='flex';"
+      />
+      <span class="logo-fallback">MP</span>
+    </div>
+
+    <div class="brand-name">MICRO<span>PATCHES</span></div>
+    <div class="tagline">3D Printed Patch Keychains &nbsp;&middot;&nbsp; LEO &nbsp;&middot;&nbsp; Fire &nbsp;&middot;&nbsp; Military</div>
+    <div class="handle-pill">@micropatches</div>
+    <div class="live-clock" id="clock">--:-- --</div>
+  </header>
+
+  <div class="divider"></div>
+
+  <!-- ============================================================
+       SECTION 2 — SHOP BUTTON
+       ============================================================ -->
+  <div class="section anim">
+    <a
+      href="https://www.etsy.com/shop/MicroPatches"
+      class="shop-btn"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      SHOP ON ETSY
+      <span class="shop-btn-arrow">&#8599;</span>
+    </a>
+    <div class="shop-sub">
+      Keychains $12.99 &nbsp;&middot;&nbsp; Magnets $12.99 &nbsp;&middot;&nbsp; Croc Charms $7.99<br>
+      No Minimum Orders. Ever.
+    </div>
+    <div class="accent-bar"></div>
+  </div>
+
+  <!-- ============================================================
+       SECTION 3 — LIVE ORDER QUEUE
+       ============================================================ -->
+  <div class="section anim">
+    <div class="queue-panel">
+
+      <div class="queue-head">
+        <div class="queue-title">MicroPatch Queue</div>
+        <div class="live-badge">
+          <div class="live-dot"></div>
+          LIVE
+        </div>
+      </div>
+
+      <!-- Rows injected by JS -->
+      <div id="queue-rows"></div>
+
+      <!-- "X more" line injected by JS -->
+      <div id="queue-more" class="queue-more"></div>
+
+      <div class="queue-btns">
+        <a
+          href="https://www.instagram.com/micropatches"
+          class="q-btn q-btn-outline"
+          target="_blank"
+          rel="noopener noreferrer"
+        >View Full Queue</a>
+        <a
+          href="https://www.instagram.com/micropatches"
+          class="q-btn q-btn-fill"
+          target="_blank"
+          rel="noopener noreferrer"
+        >Submit Your Patch</a>
+      </div>
+
+      <p class="queue-note">
+        Custom orders are always priority and jump to the front of the line.
+        Standard queue patches are built for free. You just pay the product
+        cost when done.
+      </p>
+
+    </div>
+    <div class="accent-bar"></div>
+  </div>
+
+  <!-- ============================================================
+       SECTION 4 — CUSTOM ORDERS CARD
+       ============================================================ -->
+  <div class="section anim">
+    <div class="card card-gold">
+      <div class="card-body">
+        <div class="label">Priority</div>
+        <div class="card-title">Have A Custom<br>Order?</div>
+        <div class="card-desc">
+          Custom orders jump to the front of the line ahead of all standard
+          queue orders. We design it from scratch based on your description,
+          references, or concept. All three products available on custom orders.
+          DM us on Instagram or TikTok to get started and we will put together
+          a quote.
+        </div>
+        <div class="tag-row">
+          <span class="tag tag-gold">Front of Line</span>
+          <span class="tag tag-gold">No Minimum</span>
+          <span class="tag tag-gold">DM to Start</span>
+        </div>
+      </div>
+    </div>
+    <div class="accent-bar"></div>
+  </div>
+
+  <!-- ============================================================
+       SECTION 5 — EXCHANGE PROGRAM CARD
+       ============================================================ -->
+  <div class="section anim">
+    <div class="card card-green">
+      <div class="card-body">
+        <div class="label label-green">Exchange Program</div>
+        <div class="card-title">Got A Patch In<br>A Drawer?</div>
+        <div class="card-desc">
+          Send us any physical patch from a department you served, a retired
+          officer, or a family member's unit. We genuinely want to add it to
+          our collection and it helps us build the design.
+          <br><br>
+          Exchange patches are processed in the standard queue in the order
+          they arrive. Once we get to your patch and produce it you receive
+          one free keychain or magnet on us. Croc charm if available. Or apply
+          it as a discount toward a custom order instead.
+          <br><br>
+          You just cover shipping. DM us to get the mailing details. No timeline
+          guarantees but we will take care of you.
+        </div>
+        <div class="tag-row">
+          <span class="tag tag-green">Free Keychain or Magnet</span>
+          <span class="tag tag-green">Standard Queue</span>
+          <span class="tag tag-green">DM to Start</span>
+        </div>
+      </div>
+    </div>
+    <div class="accent-bar"></div>
+  </div>
+
+  <!-- ============================================================
+       SECTION 6 — CUSTOM DESIGN PRICING
+       ============================================================ -->
+  <div class="section anim">
+    <div class="section-head">
+      <div class="label">Custom Design Pricing</div>
+    </div>
+
+    <div class="pricing-grid">
+
+      <div class="price-card">
+        <div class="price-amount">$25</div>
+        <div class="price-title">Digital Logo</div>
+        <div class="price-desc">
+          You already have a clean generated or digital version ready. This fee
+          exists because custom orders jump the standard queue. It keeps things
+          fair for everyone waiting their turn.
+        </div>
+      </div>
+
+      <div class="price-card">
+        <div class="price-amount">$75 &ndash; $100</div>
+        <div class="price-title">Physical Patch Only</div>
+        <div class="price-desc">
+          Send us a clear photo. We design a full clean digital version,
+          print it, and you keep the file for social media, your website,
+          or anything you need.
+        </div>
+      </div>
+
+      <div class="price-card">
+        <div class="price-amount">$100 &ndash; $150</div>
+        <div class="price-title">Fully Original</div>
+        <div class="price-desc">
+          Memorial patches, retirement gifts, commemorative designs built
+          entirely from scratch with no reference material.
+        </div>
+      </div>
+
+      <div class="price-card price-card-budget">
+        <div class="price-amount">Just Ask</div>
+        <div class="price-title">Budget Tight?</div>
+        <div class="price-desc">
+          We are always willing to negotiate to fit your budget. Reach out
+          and we will work something out.
+        </div>
+      </div>
+
+    </div>
+
+    <p class="pricing-note">
+      Design fee is one time and separate from the $12.99 per unit product cost.
+    </p>
+
+    <div class="accent-bar"></div>
+  </div>
+
+  <!-- ============================================================
+       SECTION 7 — SOCIAL LINKS
+       ============================================================ -->
+  <div class="section anim">
+    <div class="section-head">
+      <div class="label">Find Us Everywhere</div>
+    </div>
+
+    <div class="social-grid">
+
+      <a
+        href="https://www.instagram.com/micropatches"
+        class="social-card"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <div class="social-abbr">IG</div>
+        <div class="social-platform">Instagram</div>
+        <div class="social-handle">@micropatches</div>
+      </a>
+
+      <a
+        href="https://www.tiktok.com/@micro.patches"
+        class="social-card"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <div class="social-abbr">TK</div>
+        <div class="social-platform">TikTok</div>
+        <div class="social-handle">@micro.patches</div>
+      </a>
+
+      <a
+        href="https://www.youtube.com/@micropatches"
+        class="social-card"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <div class="social-abbr">YT</div>
+        <div class="social-platform">YouTube</div>
+        <div class="social-handle">@micropatches</div>
+      </a>
+
+      <a
+        href="mailto:OfficialMicroPatches@gmail.com"
+        class="social-card"
+      >
+        <div class="social-abbr">EM</div>
+        <div class="social-platform">Email</div>
+        <div class="social-handle">OfficialMicroPatches<br>@gmail.com</div>
+      </a>
+
+    </div>
+    <div class="accent-bar"></div>
+  </div>
+
+  <!-- ============================================================
+       SECTION 8 — MISSION STATEMENT
+       ============================================================ -->
+  <div class="section anim">
+    <div class="mission-box bracket">
+      <div class="label" style="margin-bottom: 12px;">Our Mission</div>
+      <p class="mission-text">
+        We are on a mission to 3D print a miniature patch keychain for every
+        law enforcement agency, fire department, military unit, and first
+        responder organization in the world. Every single one. Completely free.
+        You just pay the cost of the keychain.
+        <br><br>
+        Our long term goal is to donate a portion of all proceeds to the
+        families of fallen officers, veterans, and first responders.
+      </p>
+    </div>
+    <div class="accent-bar"></div>
+  </div>
+
+  <!-- ============================================================
+       SECTION 9 — FOOTER
+       ============================================================ -->
+  <footer class="footer anim">
+    <div class="footer-brand">MICRO<span>PATCHES</span></div>
+    <div class="footer-sub">Phoenix, Arizona &nbsp;&middot;&nbsp; USA Made, Always</div>
+  </footer>
+
+</div><!-- /page -->
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+/* =============================================================
+   QUEUE DATA
+   Update this array to change what appears in the queue panel.
+   Fields:
+     name   — Department or agency name (string)
+     status — "queued" | "in-progress" | "complete"
+   ============================================================= */
+const QUEUE = [
+  { name: "Orange County Sheriff's Office",  status: "queued" },
+  { name: "Davie County Sheriff's Office",   status: "queued" },
+  { name: "North Carolina Highway Patrol",   status: "queued" },
+  { name: "Globe Arizona PD",                status: "queued" },
+  { name: "18th Airborne Corps",             status: "queued" },
+];
+
+/* How many entries to show before the "+ X more" line */
+const QUEUE_VISIBLE = 4;
+
+/* ── Badge config ─────────────────────────────────────────── */
+const BADGE = {
+  "queued":      { cls: "q-queued",      label: "Queued"      },
+  "in-progress": { cls: "q-in-progress", label: "In Progress" },
+  "complete":    { cls: "q-complete",    label: "Complete"    },
+};
+
+/* ── Render queue ─────────────────────────────────────────── */
+function renderQueue() {
+  const rowsEl = document.getElementById("queue-rows");
+  const moreEl = document.getElementById("queue-more");
+  const visible = QUEUE.slice(0, QUEUE_VISIBLE);
+  const hidden  = QUEUE.length - QUEUE_VISIBLE;
+
+  rowsEl.innerHTML = visible.map((entry, i) => {
+    const b = BADGE[entry.status] || BADGE["queued"];
+    return `
+      <div class="queue-row">
+        <div class="queue-num">#${i + 1}</div>
+        <div class="queue-name">${entry.name}</div>
+        <div class="q-badge ${b.cls}">${b.label}</div>
+      </div>`;
+  }).join("");
+
+  if (hidden > 0) {
+    moreEl.textContent = `+ ${hidden} more waiting in queue`;
+  } else {
+    moreEl.style.display = "none";
+  }
+}
+
+renderQueue();
+
+/* ── Live clock ───────────────────────────────────────────── */
+function updateClock() {
+  const now  = new Date();
+  const h    = now.getHours();
+  const m    = String(now.getMinutes()).padStart(2, "0");
+  const s    = String(now.getSeconds()).padStart(2, "0");
+  const ampm = h >= 12 ? "PM" : "AM";
+  const h12  = h % 12 || 12;
+  document.getElementById("clock").textContent = `${h12}:${m}:${s} ${ampm}`;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+/* ── Staggered fade-up via IntersectionObserver ───────────── */
+const observer = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("visible");
+        observer.unobserve(entry.target);
+      }
+    });
+  },
+  { threshold: 0.08 }
+);
+
+document.querySelectorAll(".anim").forEach((el, i) => {
+  /* Stagger by index so elements cascade as page loads */
+  el.style.transitionDelay = `${i * 0.07}s`;
+  observer.observe(el);
+});
+</script>
+</body>
+</html>
