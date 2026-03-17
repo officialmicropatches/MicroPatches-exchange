@@ -443,6 +443,7 @@
       justify-content: center;
       padding: 10px 8px;
       border-radius: var(--radius);
+      cursor: pointer;
       font-family: var(--font-mono);
       font-size: 10.5px;
       letter-spacing: 0.05em;
@@ -714,12 +715,11 @@
       <div id="queue-more" class="queue-more"></div>
 
       <div class="queue-btns">
-        <a
-          href="https://www.instagram.com/micropatches"
+        <button
+          id="queue-expand-btn"
           class="q-btn q-btn-outline"
-          target="_blank"
-          rel="noopener noreferrer"
-        >View Full Queue</a>
+          onclick="toggleQueue()"
+        >View Full Queue</button>
         <a
           href="https://www.instagram.com/micropatches"
           class="q-btn q-btn-fill"
@@ -990,6 +990,36 @@ function renderQueue() {
 }
 
 renderQueue();
+
+/* ── Toggle full queue ────────────────────────────────────── */
+let queueExpanded = false;
+function toggleQueue() {
+  queueExpanded = !queueExpanded;
+  const rowsEl = document.getElementById("queue-rows");
+  const moreEl = document.getElementById("queue-more");
+  const btn    = document.getElementById("queue-expand-btn");
+  const list   = queueExpanded ? QUEUE : QUEUE.slice(0, QUEUE_VISIBLE);
+  const hidden = QUEUE.length - QUEUE_VISIBLE;
+
+  rowsEl.innerHTML = list.map((entry, i) => {
+    const b = BADGE[entry.status] || BADGE["queued"];
+    return `
+      <div class="queue-row">
+        <div class="queue-num">#${i + 1}</div>
+        <div class="queue-name">${entry.name}</div>
+        <div class="q-badge ${b.cls}">${b.label}</div>
+      </div>`;
+  }).join("");
+
+  if (queueExpanded) {
+    moreEl.style.display = "none";
+    btn.textContent = "Collapse Queue";
+  } else {
+    moreEl.style.display = "";
+    moreEl.textContent = hidden > 0 ? `+ ${hidden} more waiting in queue` : "";
+    btn.textContent = "View Full Queue";
+  }
+}
 
 /* ── Live clock ───────────────────────────────────────────── */
 function updateClock() {
