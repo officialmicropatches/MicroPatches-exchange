@@ -1416,11 +1416,8 @@ const DEFAULT_QUEUE = [
   { name: "18th Airborne Corps",             status: "queued" },
 ];
 
-/* Admin panel saves to localStorage under this key */
-let QUEUE = (function() {
-  try { const s = localStorage.getItem("mp_queue"); if (s) return JSON.parse(s); } catch(e) {}
-  return DEFAULT_QUEUE.map(e => Object.assign({}, e));
-})();
+/* Queue is always loaded from Firestore; localStorage is only used by the admin panel */
+let QUEUE = [];
 
 /* How many entries to show before the "+ X more" line */
 const QUEUE_VISIBLE = 4;
@@ -2077,11 +2074,9 @@ function copyEmail() {
         submittedAt: serverTimestamp()
       });
 
-      /* Also append to the live queue */
-      const queueSnap   = await getDoc(doc(db, "config", "queue"));
-      const currentItems = queueSnap.exists() ? (queueSnap.data().items || []) : [];
-      const newEntry    = { name: data.agency || data.name || "Unknown", status: "queued" };
-      const updatedItems = [...currentItems, newEntry];
+      /* Also append to the live queue — use current in-memory QUEUE as source of truth */
+      const newEntry     = { name: data.agency || data.name || "Unknown", status: "queued" };
+      const updatedItems = [...QUEUE, newEntry];
       await setDoc(doc(db, "config", "queue"), { items: updatedItems });
       if (window.updateQueueFromFirestore) {
         window.updateQueueFromFirestore(updatedItems);
