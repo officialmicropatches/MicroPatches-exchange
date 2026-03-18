@@ -1398,29 +1398,9 @@
      JAVASCRIPT
      ============================================================ -->
 <script>
-/* =============================================================
-   QUEUE DATA
-   Update this array to change what appears in the queue panel.
-   Fields:
-     name   — Department or agency name (string)
-     status — "queued" | "in-progress" | "complete"
-     img    — (optional) URL to a patch photo. Add this after
-              receiving a submission. Can be a GitHub-hosted image
-              path like "patches/ocso.jpg" or any full URL.
-   ============================================================= */
-const DEFAULT_QUEUE = [
-  { name: "Orange County Sheriff's Office",  status: "queued" },
-  { name: "Davie County Sheriff's Office",   status: "queued" },
-  { name: "North Carolina Highway Patrol",   status: "queued" },
-  { name: "Globe Arizona PD",                status: "queued" },
-  { name: "18th Airborne Corps",             status: "queued" },
-];
 
-/* Admin panel saves to localStorage under this key */
-let QUEUE = (function() {
-  try { const s = localStorage.getItem("mp_queue"); if (s) return JSON.parse(s); } catch(e) {}
-  return DEFAULT_QUEUE.map(e => Object.assign({}, e));
-})();
+/* Queue is always loaded from Firestore; localStorage is only used by the admin panel */
+let QUEUE = [];
 
 /* How many entries to show before the "+ X more" line */
 const QUEUE_VISIBLE = 4;
@@ -1745,8 +1725,6 @@ function copyEmail() {
         <div style="display:flex; gap:8px;">
           <button onclick="admSave()" id="adm-save-btn"
             style="background:#C9A84C; color:#080808; border:none; border-radius:3px; padding:5px 12px; font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:0.06em; cursor:pointer;">SAVE</button>
-          <button onclick="admReset()"
-            style="background:none; border:1px solid rgba(255,255,255,0.1); color:#888; border-radius:3px; padding:5px 10px; font-family:'Share Tech Mono',monospace; font-size:10px; cursor:pointer;">RESET</button>
         </div>
       </div>
       <div id="adm-list" style="display:flex; flex-direction:column;"></div>
@@ -1936,17 +1914,6 @@ function copyEmail() {
     renderQueue();
   };
 
-  window.admReset = function() {
-    if (!confirm("Reset queue to defaults? This will discard changes.")) return;
-    try { localStorage.removeItem(QUEUE_KEY); } catch(e) {}
-    QUEUE = DEFAULT_QUEUE.map(function(e) { return Object.assign({}, e); });
-    adminQueue = QUEUE.map(function(e) { return Object.assign({}, e); });
-    if (window.fbSaveQueue) window.fbSaveQueue(QUEUE);
-    dirty = false;
-    admRender();
-    renderQueue();
-  };
-
   window.admChangePw = function() {
     var pw = document.getElementById("adm-new-pw").value.trim();
     if (!pw) return;
@@ -2077,11 +2044,9 @@ function copyEmail() {
         submittedAt: serverTimestamp()
       });
 
-      /* Also append to the live queue */
-      const queueSnap   = await getDoc(doc(db, "config", "queue"));
-      const currentItems = queueSnap.exists() ? (queueSnap.data().items || []) : [];
-      const newEntry    = { name: data.agency || data.name || "Unknown", status: "queued" };
-      const updatedItems = [...currentItems, newEntry];
+      /* Also append to the live queue — use current in-memory QUEUE as source of truth */
+      const newEntry     = { name: data.agency || data.name || "Unknown", status: "queued" };
+      const updatedItems = [...QUEUE, newEntry];
       await setDoc(doc(db, "config", "queue"), { items: updatedItems });
       if (window.updateQueueFromFirestore) {
         window.updateQueueFromFirestore(updatedItems);
