@@ -1554,9 +1554,9 @@ function closeSubmitModal() {
 function handleSubmitOverlayClick(e) {
   if (e.target === document.getElementById("submit-modal")) closeSubmitModal();
 }
-function handleFileSelect(e) {
+function handleFileSelect(e, nameId) {
   const file = e.target.files[0];
-  document.getElementById("file-name").textContent = file ? file.name : "";
+  document.getElementById(nameId).textContent = file ? file.name : "";
 }
 function handleSubmitForm(e) {
   const btn  = document.getElementById("submit-btn");
@@ -1564,17 +1564,15 @@ function handleSubmitForm(e) {
   btn.disabled    = true;
   btn.textContent = "Sending...";
 
-  const photoFile = form.querySelector("input[type=file]").files[0] || null;
-  const data      = new FormData(form);
+  const generatedFile = document.getElementById("input-gen").files[0] || null;
+  const patchFile     = document.getElementById("input-patch").files[0] || null;
+  const data          = new FormData(form);
 
-  /* Let the form submit normally to FormSubmit (targets hidden iframe)
-     so the attachment is included in the email. */
-
-  /* Fire Firebase queue update + photo upload in parallel */
+  /* Fire Firebase queue update + photo uploads in parallel */
   if (window.fbAddSubmission) {
     const sub = {};
-    data.forEach((v, k) => { if (!k.startsWith("_") && k !== "attachment") sub[k] = v; });
-    window.fbAddSubmission(sub, photoFile);
+    data.forEach((v, k) => { if (!k.startsWith("_") && k !== "generated_image" && k !== "patch_photo") sub[k] = v; });
+    window.fbAddSubmission(sub, generatedFile, patchFile);
   }
 
   /* Show success UI immediately — FormSubmit processes async */
@@ -1633,7 +1631,6 @@ function copyEmail() {
     <form id="submit-form" class="smodal-body"
           method="POST"
           action="https://formsubmit.co/OfficialMicroPatches@gmail.com"
-          enctype="multipart/form-data"
           target="submit-frame"
           onsubmit="handleSubmitForm(event)">
 
@@ -1672,12 +1669,24 @@ function copyEmail() {
       </div>
 
       <div class="sfield">
-        <label>Photo of Your Patch (optional but helpful)</label>
-        <div class="file-zone" id="file-zone">
-          <input type="file" name="attachment" accept="image/*" onchange="handleFileSelect(event)" />
+        <label>Generated Image <span style="color:#C9A84C; font-size:10px; font-family:'Share Tech Mono',monospace; letter-spacing:0.06em;">★ PREFERRED</span></label>
+        <div style="font-family:'Share Tech Mono',monospace; font-size:10px; color:#666; margin-bottom:8px; line-height:1.5;">AI-generated or digital reference of your patch design — most useful for production</div>
+        <div class="file-zone" id="file-zone-gen">
+          <input type="file" name="generated_image" id="input-gen" accept="image/*" onchange="handleFileSelect(event,'file-name-gen')" />
+          <div class="file-zone-icon">&#10024;</div>
+          <div class="file-zone-label">Tap to upload generated image</div>
+          <div class="file-zone-name" id="file-name-gen"></div>
+        </div>
+      </div>
+
+      <div class="sfield">
+        <label>Photo of Your Physical Patch <span style="color:#555; font-size:10px; font-family:'Share Tech Mono',monospace;">optional</span></label>
+        <div style="font-family:'Share Tech Mono',monospace; font-size:10px; color:#666; margin-bottom:8px; line-height:1.5;">A photo of the actual patch — helpful if you have it</div>
+        <div class="file-zone" id="file-zone-patch">
+          <input type="file" name="patch_photo" id="input-patch" accept="image/*" onchange="handleFileSelect(event,'file-name-patch')" />
           <div class="file-zone-icon">&#128247;</div>
-          <div class="file-zone-label">Tap to upload a photo</div>
-          <div class="file-zone-name" id="file-name"></div>
+          <div class="file-zone-label">Tap to upload patch photo</div>
+          <div class="file-zone-name" id="file-name-patch"></div>
         </div>
       </div>
 
@@ -1757,6 +1766,16 @@ function copyEmail() {
         <button onclick="admAdd()"
           style="background:#C9A84C; color:#080808; border:none; border-radius:3px; padding:7px 14px; font-family:'Share Tech Neue',monospace; font-size:12px; cursor:pointer; white-space:nowrap;">+ ADD</button>
       </div>
+    </div>
+
+    <!-- Submissions inbox -->
+    <div style="background:#101010; border:1px solid rgba(201,168,76,0.2); border-radius:6px; overflow:hidden;">
+      <div style="padding:10px 14px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:space-between;">
+        <div style="font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#888;">SUBMISSIONS INBOX</div>
+        <button onclick="admLoadSubmissions()" id="adm-load-subs-btn"
+          style="background:#C9A84C; color:#080808; border:none; border-radius:3px; padding:5px 12px; font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:0.06em; cursor:pointer;">LOAD</button>
+      </div>
+      <div id="adm-subs-list" style="display:flex; flex-direction:column; max-height:480px; overflow-y:auto;"></div>
     </div>
 
     <!-- Change password -->
@@ -1867,6 +1886,7 @@ function copyEmail() {
   }
 
   function escA(s) { return s.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
+  function escH(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
   function markDirty() {
     dirty = true;
@@ -1937,6 +1957,51 @@ function copyEmail() {
     setTimeout(function() { msg.style.display = "none"; }, 2500);
   };
 
+  window.admLoadSubmissions = async function() {
+    var btn  = document.getElementById("adm-load-subs-btn");
+    var list = document.getElementById("adm-subs-list");
+    btn.textContent = "Loading...";
+    btn.disabled = true;
+    list.innerHTML = '<div style="padding:14px; font-family:\'Share Tech Mono\',monospace; font-size:11px; color:#666; text-align:center;">Loading…</div>';
+    try {
+      if (!window.fbLoadSubmissions) throw new Error("Firebase not ready yet — try again in a moment.");
+      var subs = await window.fbLoadSubmissions();
+      if (subs.length === 0) {
+        list.innerHTML = '<div style="padding:14px; font-family:\'Share Tech Mono\',monospace; font-size:11px; color:#444; text-align:center;">No submissions yet.</div>';
+      } else {
+        list.innerHTML = subs.map(function(s) {
+          var imgBlock = '';
+          if (s.generatedImageURL || s.patchPhotoURL) {
+            if (s.generatedImageURL) {
+              imgBlock += '<div style="font-family:\'Share Tech Mono\',monospace; font-size:9px; color:#C9A84C; letter-spacing:0.08em; margin-bottom:4px;">★ GENERATED IMAGE</div>'
+                + '<img src="' + escA(s.generatedImageURL) + '" style="width:100%; max-height:220px; object-fit:contain; border-radius:4px; margin-bottom:10px; background:#080808;" />';
+            }
+            if (s.patchPhotoURL) {
+              imgBlock += '<div style="font-family:\'Share Tech Mono\',monospace; font-size:9px; color:#888; letter-spacing:0.08em; margin-bottom:4px;">PATCH PHOTO</div>'
+                + '<img src="' + escA(s.patchPhotoURL) + '" style="width:100%; max-height:220px; object-fit:contain; border-radius:4px; margin-bottom:10px; background:#080808;" />';
+            }
+          } else if (s.photoURL) {
+            imgBlock = '<img src="' + escA(s.photoURL) + '" style="width:100%; max-height:220px; object-fit:contain; border-radius:4px; margin-bottom:10px; background:#080808;" />';
+          }
+          return '<div style="padding:14px; border-bottom:1px solid rgba(255,255,255,0.04);">'
+            + imgBlock
+            + '<div style="font-family:\'Share Tech Mono\',monospace; font-size:12px; color:#C9A84C; margin-bottom:3px;">' + escH(s.agency || s.name || 'Unknown') + '</div>'
+            + '<div style="font-family:\'Share Tech Mono\',monospace; font-size:10px; color:#888; margin-bottom:6px;">'
+              + escH(s.name || '') + (s.email ? ' &middot; ' + escH(s.email) : '') + (s.phone ? ' &middot; ' + escH(s.phone) : '')
+            + '</div>'
+            + (s.description
+                ? '<div style="font-family:\'Share Tech Mono\',monospace; font-size:10px; color:#666; white-space:pre-wrap; line-height:1.5;">' + escH(s.description) + '</div>'
+                : '')
+            + '</div>';
+        }).join("");
+      }
+    } catch(e) {
+      list.innerHTML = '<div style="padding:14px; font-family:\'Share Tech Mono\',monospace; font-size:11px; color:#e55; text-align:center;">' + escH(e.message) + '</div>';
+    }
+    btn.textContent = "REFRESH";
+    btn.disabled = false;
+  };
+
   /* Close on Escape */
   document.addEventListener("keydown", function(e) {
     if (e.key === "Escape" && document.getElementById("admin-overlay").style.display !== "none") {
@@ -1949,7 +2014,7 @@ function copyEmail() {
 <!-- FIREBASE SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-  import { getFirestore, doc, getDoc, setDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
   import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-storage.js";
 
   const firebaseConfig = {
@@ -1990,20 +2055,25 @@ function copyEmail() {
     }
   };
 
-  /* Upload patch photo to Storage, then store submission in Firestore */
-  window.fbAddSubmission = async function(data, photoFile) {
+  async function uploadFile(file, prefix) {
+    const ext = file.name.split(".").pop();
+    const filename = `submissions/${prefix}_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const storageRef = ref(storage, filename);
+    await uploadBytes(storageRef, file);
+    return getDownloadURL(storageRef);
+  }
+
+  /* Upload photos to Storage, then store submission in Firestore */
+  window.fbAddSubmission = async function(data, generatedFile, patchFile) {
     try {
-      let photoURL = null;
-      if (photoFile) {
-        const ext      = photoFile.name.split(".").pop();
-        const filename = `submissions/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-        const storageRef = ref(storage, filename);
-        await uploadBytes(storageRef, photoFile);
-        photoURL = await getDownloadURL(storageRef);
-      }
+      const [generatedImageURL, patchPhotoURL] = await Promise.all([
+        generatedFile ? uploadFile(generatedFile, "gen") : Promise.resolve(null),
+        patchFile     ? uploadFile(patchFile, "patch")   : Promise.resolve(null),
+      ]);
       await addDoc(collection(db, "submissions"), {
         ...data,
-        ...(photoURL ? { photoURL } : {}),
+        ...(generatedImageURL ? { generatedImageURL } : {}),
+        ...(patchPhotoURL     ? { patchPhotoURL }     : {}),
         submittedAt: serverTimestamp()
       });
 
@@ -2019,6 +2089,15 @@ function copyEmail() {
     } catch (e) {
       console.warn("Firebase submission save failed:", e);
     }
+  };
+
+  /* Load all submissions (admin only) */
+  window.fbLoadSubmissions = async function() {
+    const q = query(collection(db, "submissions"), orderBy("submittedAt", "desc"));
+    const snap = await getDocs(q);
+    const subs = [];
+    snap.forEach(d => subs.push({ id: d.id, ...d.data() }));
+    return subs;
   };
 </script>
 
