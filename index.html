@@ -2004,6 +2004,16 @@ function copyEmail() {
         ...(photoURL ? { photoURL } : {}),
         submittedAt: serverTimestamp()
       });
+
+      /* Also append to the live queue */
+      const queueSnap   = await getDoc(doc(db, "config", "queue"));
+      const currentItems = queueSnap.exists() ? (queueSnap.data().items || []) : [];
+      const newEntry    = { name: data.agency || data.name || "Unknown", status: "queued" };
+      const updatedItems = [...currentItems, newEntry];
+      await setDoc(doc(db, "config", "queue"), { items: updatedItems });
+      if (window.updateQueueFromFirestore) {
+        window.updateQueueFromFirestore(updatedItems);
+      }
     } catch (e) {
       console.warn("Firebase submission save failed:", e);
     }
