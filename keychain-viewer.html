@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Houston Police Keychain — 3D Viewer | MicroPatches</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #080808;
+      --gold:      #C9A84C;
+      --gold-dim:  #8A6E2F;
+      --text:      #EBEBEB;
+      --text-muted:#888;
+      --border:    rgba(201,168,76,0.22);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      background: #0d0d0d;
+      flex-shrink: 0;
+    }
+    .brand {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem;
+      letter-spacing: 0.08em;
+      color: var(--gold);
+    }
+    .product-title {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+    .header-badge {
+      font-size: 0.7rem;
+      color: var(--gold);
+      border: 1px solid var(--border);
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.06em;
+    }
+
+    /* ── Canvas ── */
+    #canvas-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      cursor: grab;
+    }
+    #canvas-wrap:active { cursor: grabbing; }
+    #canvas-wrap canvas { display: block; width: 100% !important; height: 100% !important; }
+
+    /* ── Hint overlay ── */
+    #hint {
+      position: absolute;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 18px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      pointer-events: none;
+      white-space: nowrap;
+      transition: opacity 0.6s;
+    }
+
+    /* ── Controls bar ── */
+    #controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      background: #0d0d0d;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .ctrl-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 4px;
+      padding: 7px 16px;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .ctrl-btn:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+    .ctrl-btn.active {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: rgba(201,168,76,0.08);
+    }
+    .divider {
+      width: 1px;
+      height: 22px;
+      background: var(--border);
+    }
+    .label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+    #price-pill {
+      margin-left: auto;
+      background: rgba(201,168,76,0.1);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 16px;
+      font-size: 0.8rem;
+      color: var(--gold);
+      letter-spacing: 0.04em;
+    }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="brand">MicroPatches</div>
+    <div class="product-title">Houston Police — PVC Patch Keychain</div>
+  </div>
+  <div class="header-badge">3D PREVIEW</div>
+</header>
+
+<div id="canvas-wrap">
+  <div id="hint">Drag to rotate &nbsp;·&nbsp; Scroll to zoom &nbsp;·&nbsp; Right-drag to pan</div>
+</div>
+
+<div id="controls">
+  <span class="label">VIEW</span>
+  <button class="ctrl-btn" id="btn-front">Front</button>
+  <button class="ctrl-btn" id="btn-back">Back</button>
+  <button class="ctrl-btn" id="btn-top">Top / Edge</button>
+  <div class="divider"></div>
+  <span class="label">SPIN</span>
+  <button class="ctrl-btn" id="btn-auto">Auto-Rotate</button>
+  <div class="divider"></div>
+  <button class="ctrl-btn" id="btn-reset">Reset</button>
+  <div id="price-pill">From $12.99</div>
+</div>
+
+<!-- Three.js r158 -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ═══════════════════════════════════════════════
+   SCENE SETUP
+═══════════════════════════════════════════════ */
+const wrap   = document.getElementById('canvas-wrap');
+const W      = () => wrap.clientWidth;
+const H      = () => wrap.clientHeight;
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(W(), H());
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace   = THREE.SRGBColorSpace;
+renderer.toneMapping        = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+wrap.appendChild(renderer.domElement);
+
+const scene  = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a0a);
+scene.fog        = new THREE.Fog(0x0a0a0a, 18, 38);
+
+const camera = new THREE.PerspectiveCamera(38, W() / H(), 0.01, 100);
+camera.position.set(0, 0, 9);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping    = true;
+controls.dampingFactor    = 0.07;
+controls.minDistance      = 4;
+controls.maxDistance      = 18;
+controls.autoRotate       = false;
+controls.autoRotateSpeed  = 1.8;
+
+/* ═══════════════════════════════════════════════
+   LIGHTING
+═══════════════════════════════════════════════ */
+// Ambient
+scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+
+// Key light (warm)
+const key = new THREE.DirectionalLight(0xfff4e0, 2.8);
+key.position.set(5, 8, 7);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.camera.near = 0.5;
+key.shadow.camera.far  = 30;
+key.shadow.camera.left = key.shadow.camera.bottom = -6;
+key.shadow.camera.right = key.shadow.camera.top   =  6;
+scene.add(key);
+
+// Fill light (cool)
+const fill = new THREE.DirectionalLight(0xc8e0ff, 0.9);
+fill.position.set(-6, 2, 4);
+scene.add(fill);
+
+// Rim
+const rim = new THREE.DirectionalLight(0xffd080, 1.1);
+rim.position.set(0, -5, -6);
+scene.add(rim);
+
+// Floor reflection plane (invisible, receives shadows)
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(40, 40),
+  new THREE.ShadowMaterial({ opacity: 0.25 })
+);
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = -3.8;
+floor.receiveShadow = true;
+scene.add(floor);
+
+/* ═══════════════════════════════════════════════
+   CANVAS TEXTURE HELPERS
+═══════════════════════════════════════════════ */
+function makeCanvas(w, h) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  return c;
+}
+function canvasTex(c) {
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+/* ═══════════════════════════════════════════════
+   SHIELD SHAPE  (smooth badge silhouette)
+═══════════════════════════════════════════════ */
+function makeShieldShape(scale = 1) {
+  const s = new THREE.Shape();
+  // Rounded-bottom shield, flat top, slight shoulder curve
+  // Units: approx -1..1 width, -1.2..1 height
+  const pts = [
+    [-0.78,  0.90],
+    [-0.82,  0.55],
+    [-0.90, -0.10],
+    [-0.72, -0.70],
+    [ 0.00, -1.10],
+    [ 0.72, -0.70],
+    [ 0.90, -0.10],
+    [ 0.82,  0.55],
+    [ 0.78,  0.90],
+    [ 0.40,  1.02],
+    [ 0.00,  1.07],
+    [-0.40,  1.02],
+  ].map(([x, y]) => [x * scale, y * scale]);
+
+  s.moveTo(...pts[0]);
+  // Use catmull-like smooth curves via quadratic beziers
+  for (let i = 1; i < pts.length; i++) {
+    const [x, y] = pts[i];
+    s.lineTo(x, y);
+  }
+  s.closePath();
+  return s;
+}
+
+/* ═══════════════════════════════════════════════
+   FRONT FACE TEXTURE  — Houston Police design
+═══════════════════════════════════════════════ */
+function drawFrontTexture() {
+  const S = 512;
+  const c = makeCanvas(S, S);
+  const ctx = c.getContext('2d');
+
+  const cx = S / 2, cy = S / 2 + 10;
+
+  // --- Background: black ---
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(0, 0, S, S);
+
+  // ── Yellow border ring (draw thick stroke of the shield outline in canvas coords)
+  // We paint a thick concentric shield slightly smaller
+  function shieldPath(ctx, ox, oy, sc) {
+    const pts = [
+      [-0.78,  0.90],[-0.82,  0.55],[-0.90, -0.10],
+      [-0.72, -0.70],[ 0.00, -1.10],[ 0.72, -0.70],
+      [ 0.90, -0.10],[ 0.82,  0.55],[ 0.78,  0.90],
+      [ 0.40,  1.02],[ 0.00,  1.07],[-0.40,  1.02],
+    ];
+    ctx.beginPath();
+    ctx.moveTo(ox + pts[0][0]*sc, oy - pts[0][1]*sc);
+    for (let i = 1; i < pts.length; i++) {
+      ctx.lineTo(ox + pts[i][0]*sc, oy - pts[i][1]*sc);
+    }
+    ctx.closePath();
+  }
+
+  // Yellow outer border
+  shieldPath(ctx, cx, cy, 230);
+  ctx.fillStyle = '#F5B800';
+  ctx.fill();
+
+  // Black inner body
+  shieldPath(ctx, cx, cy, 200);
+  ctx.fillStyle = '#0d0d0d';
+  ctx.fill();
+
+  // ── "HOUSTON" text (top arc)
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.font = 'bold 42px Arial Black, Arial';
+  ctx.fillStyle = '#F5B800';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.letterSpacing = '4px';
+
+  // Arced "HOUSTON"
+  const text1 = 'HOUSTON';
+  const arcR1 = 148;
+  const arcStart1 = -Math.PI * 0.42;
+  const arcEnd1   =  Math.PI * 0.42;
+  const step1 = (arcEnd1 - arcStart1) / (text1.length - 1);
+  for (let i = 0; i < text1.length; i++) {
+    const angle = arcStart1 + step1 * i - Math.PI / 2;
+    const lx = arcR1 * Math.cos(angle);
+    const ly = arcR1 * Math.sin(angle);
+    ctx.save();
+    ctx.translate(lx, ly);
+    ctx.rotate(angle + Math.PI / 2);
+    ctx.fillText(text1[i], 0, 0);
+    ctx.restore();
+  }
+  ctx.restore();
+
+  // ── "POLICE" text (bottom arc)
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.font = 'bold 40px Arial Black, Arial';
+  ctx.fillStyle = '#F5B800';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const text2 = 'POLICE';
+  const arcR2 = 148;
+  const arcStart2 = Math.PI - 0.38;
+  const arcEnd2   = Math.PI * 2 + 0.38;
+  // Bottom half
+  const step2 = (arcEnd2 - arcStart2) / (text2.length - 1);
+  for (let i = 0; i < text2.length; i++) {
+    const angle = arcStart2 + step2 * i - Math.PI / 2;
+    const lx = arcR2 * Math.cos(angle);
+    const ly = arcR2 * Math.sin(angle);
+    ctx.save();
+    ctx.translate(lx, ly);
+    ctx.rotate(angle + Math.PI / 2);
+    ctx.fillText(text2[i], 0, 0);
+    ctx.restore();
+  }
+  ctx.restore();
+
+  // ── Central medallion ──
+  const medR = 98;
+
+  // Outer gold ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, medR, 0, Math.PI * 2);
+  ctx.fillStyle = '#F5B800';
+  ctx.fill();
+
+  // Dark green ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, medR - 6, 0, Math.PI * 2);
+  ctx.fillStyle = '#1a4a1a';
+  ctx.fill();
+
+  // Black inner circle
+  ctx.beginPath();
+  ctx.arc(cx, cy, medR - 14, 0, Math.PI * 2);
+  ctx.fillStyle = '#111';
+  ctx.fill();
+
+  // Globe (light blue)
+  ctx.beginPath();
+  ctx.arc(cx, cy, 56, 0, Math.PI * 2);
+  const globeGrad = ctx.createRadialGradient(cx - 10, cy - 10, 4, cx, cy, 56);
+  globeGrad.addColorStop(0, '#6fc8e0');
+  globeGrad.addColorStop(1, '#2a5a8a');
+  ctx.fillStyle = globeGrad;
+  ctx.fill();
+
+  // Globe latitude lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.lineWidth = 1;
+  for (let lat = -40; lat <= 40; lat += 20) {
+    const latY = cy + (lat / 90) * 56;
+    const latW = Math.sqrt(Math.max(0, 56*56 - (latY - cy)*(latY - cy)));
+    ctx.beginPath();
+    ctx.ellipse(cx, latY, latW, latW * 0.25, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  // Globe longitude
+  for (let lon = 0; lon < 180; lon += 45) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate((lon * Math.PI) / 180);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 8, 56, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Clip globe
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, 56, 0, Math.PI * 2);
+  ctx.clip();
+
+  // Continents (rough blobs)
+  ctx.fillStyle = 'rgba(60,140,60,0.85)';
+  // North America
+  ctx.beginPath();
+  ctx.ellipse(cx - 22, cy - 12, 18, 22, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+  // Europe/Africa
+  ctx.beginPath();
+  ctx.ellipse(cx + 8, cy - 5, 10, 28, 0.1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Red X / crosshair
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.strokeStyle = '#cc2200';
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  // Diagonal cross
+  ctx.beginPath();
+  ctx.moveTo(-36, -36); ctx.lineTo(36, 36);
+  ctx.moveTo(36, -36);  ctx.lineTo(-36, 36);
+  ctx.stroke();
+  ctx.restore();
+
+  // "CITY OF HOUSTON POLICE" ring text
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.font = '11px Arial';
+  ctx.fillStyle = '#00cc55';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const ringText = '★ CITY OF HOUSTON POLICE ★ CITY U.S.A. ★';
+  const ringR = medR - 10;
+  const charAngle = (Math.PI * 2) / ringText.length;
+  for (let i = 0; i < ringText.length; i++) {
+    const angle = i * charAngle - Math.PI / 2;
+    ctx.save();
+    ctx.translate(ringR * Math.cos(angle), ringR * Math.sin(angle));
+    ctx.rotate(angle + Math.PI / 2);
+    ctx.fillText(ringText[i], 0, 0);
+    ctx.restore();
+  }
+  ctx.restore();
+
+  // Center star / badge mark
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  for (let i = 0; i < 5; i++) {
+    const a = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+    const b = a + (2 * Math.PI) / 5;
+    ctx.lineTo(10 * Math.cos(a), 10 * Math.sin(a));
+    ctx.lineTo(4 * Math.cos(b + (2 * Math.PI) / 10), 4 * Math.sin(b + (2 * Math.PI) / 10));
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Subtle inner glow/depth ring
+  const glow = ctx.createRadialGradient(cx, cy, 195, cx, cy, 220);
+  glow.addColorStop(0, 'transparent');
+  glow.addColorStop(1, 'rgba(0,0,0,0.55)');
+  shieldPath(ctx, cx, cy, 200);
+  ctx.fillStyle = glow;
+  ctx.fill();
+
+  return c;
+}
+
+/* ═══════════════════════════════════════════════
+   BACK FACE TEXTURE  — plain black + logo area
+═══════════════════════════════════════════════ */
+function drawBackTexture() {
+  const S = 512;
+  const c = makeCanvas(S, S);
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#111';
+  ctx.fillRect(0, 0, S, S);
+
+  function shieldPath(ctx, ox, oy, sc) {
+    const pts = [
+      [-0.78,  0.90],[-0.82,  0.55],[-0.90, -0.10],
+      [-0.72, -0.70],[ 0.00, -1.10],[ 0.72, -0.70],
+      [ 0.90, -0.10],[ 0.82,  0.55],[ 0.78,  0.90],
+      [ 0.40,  1.02],[ 0.00,  1.07],[-0.40,  1.02],
+    ];
+    ctx.beginPath();
+    ctx.moveTo(ox + pts[0][0]*sc, oy - pts[0][1]*sc);
+    for (let i = 1; i < pts.length; i++) {
+      ctx.lineTo(ox + pts[i][0]*sc, oy - pts[i][1]*sc);
+    }
+    ctx.closePath();
+  }
+
+  const cx = S/2, cy = S/2+10;
+
+  shieldPath(ctx, cx, cy, 230);
+  ctx.fillStyle = '#181818';
+  ctx.fill();
+  shieldPath(ctx, cx, cy, 224);
+  ctx.strokeStyle = '#F5B800';
+  ctx.lineWidth = 6;
+  ctx.stroke();
+
+  // Back center text
+  ctx.fillStyle = '#333';
+  ctx.font = 'bold 22px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('MicroPatches', cx, cy - 18);
+  ctx.font = '14px Arial';
+  ctx.fillStyle = '#2a2a2a';
+  ctx.fillText('officialmicropatches.com', cx, cy + 10);
+  ctx.font = '11px Arial';
+  ctx.fillStyle = '#222';
+  ctx.fillText('Made in USA  ·  PVC Rubber', cx, cy + 34);
+
+  return c;
+}
+
+/* ═══════════════════════════════════════════════
+   BUILD THE KEYCHAIN MESH GROUP
+═══════════════════════════════════════════════ */
+const group = new THREE.Group();
+scene.add(group);
+
+const shieldShape = makeShieldShape(2.0);
+
+// ── Main body extrusion ──
+const extSettings = {
+  depth: 0.22,
+  bevelEnabled: true,
+  bevelThickness: 0.04,
+  bevelSize: 0.05,
+  bevelSegments: 6,
+};
+const bodyGeo = new THREE.ExtrudeGeometry(shieldShape, extSettings);
+bodyGeo.center();
+
+// Front texture
+const frontTex = canvasTex(drawFrontTexture());
+frontTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+// Back texture
+const backTex = canvasTex(drawBackTexture());
+backTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+// Side (edge) material — dark rubber
+const sideMat = new THREE.MeshStandardMaterial({
+  color: 0x111111,
+  roughness: 0.9,
+  metalness: 0.0,
+});
+
+// Front face
+const frontMat = new THREE.MeshStandardMaterial({
+  map: frontTex,
+  roughness: 0.55,
+  metalness: 0.0,
+  bumpMap: frontTex,
+  bumpScale: 0.012,
+});
+
+// Back face
+const backMat = new THREE.MeshStandardMaterial({
+  map: backTex,
+  roughness: 0.7,
+  metalness: 0.0,
+});
+
+// ExtrudeGeometry: group 0 = front, group 1 = side+back bevel, we need custom setup
+// Manually assign: face indices 0 = front, 1 = back, 2 = side
+const body = new THREE.Mesh(bodyGeo, [frontMat, sideMat, backMat]);
+// Extrude gives 2 groups: 0=side(extrusion), 1=caps(front+back)
+// Override: use MeshFaceMaterial trick
+body.material = [sideMat, frontMat];
+body.castShadow = true;
+body.receiveShadow = true;
+group.add(body);
+
+// Raise front face texture brightness slightly with an extra overlay mesh
+// (thin plane on front)
+const frontPlane = new THREE.Mesh(
+  new THREE.PlaneGeometry(3.88, 4.18),
+  new THREE.MeshStandardMaterial({
+    map: frontTex,
+    roughness: 0.5,
+    metalness: 0.02,
+    transparent: false,
+  })
+);
+frontPlane.position.z = 0.145;
+frontPlane.castShadow = false;
+// Clip plane to shield shape via stencil (skip for simplicity — texture alignment is fine)
+group.add(frontPlane);
+
+// ── Yellow border strips (raised PVC ridges) ──
+const borderShape = makeShieldShape(2.0);
+const holeShape   = makeShieldShape(1.82);
+borderShape.holes.push(holeShape);
+
+const borderGeo = new THREE.ExtrudeGeometry(borderShape, {
+  depth: 0.08,
+  bevelEnabled: true,
+  bevelThickness: 0.02,
+  bevelSize: 0.02,
+  bevelSegments: 3,
+});
+borderGeo.center();
+
+const borderMat = new THREE.MeshStandardMaterial({
+  color: 0xF5B800,
+  roughness: 0.6,
+  metalness: 0.05,
+  envMapIntensity: 0.4,
+});
+
+const border = new THREE.Mesh(borderGeo, borderMat);
+border.position.z = 0.11;
+border.castShadow = true;
+group.add(border);
+
+// ── Loop hole at top ──
+const loopGeo = new THREE.TorusGeometry(0.12, 0.04, 10, 24);
+const loopMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9, metalness: 0 });
+const loop = new THREE.Mesh(loopGeo, loopMat);
+loop.position.set(0, 2.26, 0);
+loop.castShadow = true;
+group.add(loop);
+
+// ── Small chain link ──
+const link1Geo = new THREE.TorusGeometry(0.14, 0.035, 8, 20);
+const metalMat = new THREE.MeshStandardMaterial({
+  color: 0xd0d0d0,
+  roughness: 0.15,
+  metalness: 0.95,
+  envMapIntensity: 1.2,
+});
+const link1 = new THREE.Mesh(link1Geo, metalMat);
+link1.position.set(0, 2.62, 0);
+link1.rotation.x = Math.PI / 2.5;
+link1.castShadow = true;
+group.add(link1);
+
+const link2 = new THREE.Mesh(link1Geo, metalMat);
+link2.position.set(0, 2.95, 0);
+link2.rotation.x = Math.PI / 2;
+link2.castShadow = true;
+group.add(link2);
+
+// ── Swivel clasp body ──
+const claspBodyGeo = new THREE.CapsuleGeometry(0.085, 0.32, 6, 12);
+const clasp = new THREE.Mesh(claspBodyGeo, metalMat);
+clasp.position.set(0, 3.42, 0);
+clasp.castShadow = true;
+group.add(clasp);
+
+// Clasp ring
+const claspRingGeo = new THREE.TorusGeometry(0.18, 0.04, 8, 22);
+const claspRing = new THREE.Mesh(claspRingGeo, metalMat);
+claspRing.position.set(0, 3.78, 0);
+claspRing.castShadow = true;
+group.add(claspRing);
+
+// ── Large key ring ──
+const keyRingGeo = new THREE.TorusGeometry(0.52, 0.045, 10, 60);
+const keyRing = new THREE.Mesh(keyRingGeo, metalMat);
+keyRing.position.set(0, 4.42, 0);
+keyRing.castShadow = true;
+group.add(keyRing);
+
+// Initial tilt for better first impression
+group.rotation.x = 0.18;
+group.rotation.y = -0.12;
+
+/* ═══════════════════════════════════════════════
+   ENVIRONMENT MAP (fake IBL via hemisphere)
+═══════════════════════════════════════════════ */
+scene.add(new THREE.HemisphereLight(0xc8d8f0, 0x302010, 0.5));
+
+/* ═══════════════════════════════════════════════
+   PARTICLE DUST (subtle ambient depth)
+═══════════════════════════════════════════════ */
+{
+  const N = 180;
+  const pos = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    pos[i*3]   = (Math.random() - 0.5) * 20;
+    pos[i*3+1] = (Math.random() - 0.5) * 20;
+    pos[i*3+2] = (Math.random() - 0.5) * 20;
+  }
+  const dustGeo = new THREE.BufferGeometry();
+  dustGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const dustMat = new THREE.PointsMaterial({ color: 0xc9a84c, size: 0.03, transparent: true, opacity: 0.3 });
+  scene.add(new THREE.Points(dustGeo, dustMat));
+}
+
+/* ═══════════════════════════════════════════════
+   BUTTON CONTROLS
+═══════════════════════════════════════════════ */
+const VIEWS = {
+  front: { pos: [0, 0, 9],   target: [0, 0, 0] },
+  back:  { pos: [0, 0, -9],  target: [0, 0, 0] },
+  top:   { pos: [0, 9, 1.5], target: [0, 0, 0] },
+};
+
+function animateTo(pos, target, dur = 700) {
+  const from     = camera.position.clone();
+  const fromTgt  = controls.target.clone();
+  const to       = new THREE.Vector3(...pos);
+  const toTgt    = new THREE.Vector3(...target);
+  const start    = performance.now();
+  function step(now) {
+    const t = Math.min((now - start) / dur, 1);
+    const e = t < 0.5 ? 2*t*t : -1+(4-2*t)*t; // ease-in-out
+    camera.position.lerpVectors(from, to, e);
+    controls.target.lerpVectors(fromTgt, toTgt, e);
+    controls.update();
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+document.getElementById('btn-front').onclick = () => animateTo(VIEWS.front.pos, VIEWS.front.target);
+document.getElementById('btn-back').onclick  = () => animateTo(VIEWS.back.pos,  VIEWS.back.target);
+document.getElementById('btn-top').onclick   = () => animateTo(VIEWS.top.pos,   VIEWS.top.target);
+document.getElementById('btn-reset').onclick = () => {
+  animateTo(VIEWS.front.pos, VIEWS.front.target);
+  group.rotation.set(0.18, -0.12, 0);
+};
+
+const autoBtn = document.getElementById('btn-auto');
+autoBtn.onclick = () => {
+  controls.autoRotate = !controls.autoRotate;
+  autoBtn.classList.toggle('active', controls.autoRotate);
+};
+
+/* Hide hint after first interaction */
+let hintGone = false;
+renderer.domElement.addEventListener('pointerdown', () => {
+  if (!hintGone) {
+    hintGone = true;
+    document.getElementById('hint').style.opacity = '0';
+  }
+});
+
+/* ═══════════════════════════════════════════════
+   RESIZE
+═══════════════════════════════════════════════ */
+window.addEventListener('resize', () => {
+  camera.aspect = W() / H();
+  camera.updateProjectionMatrix();
+  renderer.setSize(W(), H());
+});
+
+/* ═══════════════════════════════════════════════
+   RENDER LOOP
+═══════════════════════════════════════════════ */
+function animate(t) {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
